@@ -8,7 +8,9 @@
 //   return 0;
 // }
 
+//__attribute__((section(".prova"))) void exception_handler(){
 __attribute__((section(".prova"))) void exception_handler(){
+
     printf("Exception");
     while (1)
     {

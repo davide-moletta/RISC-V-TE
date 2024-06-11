@@ -8,9 +8,11 @@ _eram = ORIGIN(dram) + LENGTH(dram);
 ENTRY(_reset)
 
 SECTIONS {
-  .prova :{
+/*  .prova :{
     KEEP(*(.prova))
   }  > dram
+  */
+  
   .text     : { *(.text) *(.text*) } > iram
 
   .data : {
