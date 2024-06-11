@@ -1,4 +1,4 @@
-CFLAGS ?= -W -Wall -Wextra -Werror -Wundef -Wshadow -Wdouble-promotion -Os $(EXTRA_CFLAGS)
+CFLAGS ?= -W -Wall -Wextra -Werror -Wundef -Wshadow -Wdouble-promotion -fno-builtin-printf -Os $(EXTRA_CFLAGS)
 PROG ?= esputil
 BINDIR ?= .
 CWD ?= $(realpath $(CURDIR))
