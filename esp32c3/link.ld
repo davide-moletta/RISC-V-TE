@@ -8,12 +8,11 @@ _eram = ORIGIN(dram) + LENGTH(dram);
 ENTRY(_reset)
 
 SECTIONS {
-/*  .prova :{
-    KEEP(*(.prova))
-  }  > dram
-  */
+  .intr_vector_table :{ KEEP(*(.intr_vector_table)) }  > iram
+
+  .intr_service_routines :{ KEEP(*(.intr_service_routines)) }  > iram
   
-  .text     : { *(.text) *(.text*) } > iram
+  .text :{ *(.text) *(.text*) } > iram
 
   .data : {
     . = ALIGN(16);
