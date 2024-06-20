@@ -1,13 +1,24 @@
 #include <mdk.h>
 #include <intr_vector_table.h>
 
+/*
+    JTAG 
+    black: ground
+    red: 5V
+    green: 19
+    white: 18
+*/
+
 void user_mode_entry_point()
 {
     // asm("la t0, 0x0");
     // asm("csrw mie, t0");
+
     // asm("add a0, a0, 4");
     // asm("ecall");
+    
     // asm("j main + 1");
+
     printf("Hello from user mode!\n");
     asm("ret");
 }

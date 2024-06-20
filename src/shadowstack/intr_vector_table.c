@@ -68,6 +68,12 @@ void interrupt_vector_table(void)
 void synchronous_exception_handler(void)
 {
     printf("Synchronous exception or user software error generated\n");
+
+}
+
+void isr_supervisor_software(void)
+{
+    printf("Supervisor software interrupt generated");
 }
 void isr_machine_software(void)
 {
@@ -77,9 +83,25 @@ void isr_user_timer(void)
 {
     printf("User timer interrupt generated\n");
 }
+void isr_supervisor_timer(void)
+{
+    printf("Supervisor timer interrupt generated");
+}
 void isr_machine_timer(void)
 {
     printf("Machine timer interrupt generated\n");
+}
+void isr_user_external(void)
+{
+    printf("User external interrupt generated");
+}
+void isr_supervisor_external(void)
+{
+    printf("Supervisor external interrupt generated");
+}
+void isr_machine_external(void)
+{
+    printf("Machine external interrupt generated");
 }
 
 /*
@@ -88,34 +110,4 @@ void isr_machine_timer(void)
 void isr_reserved(void)
 {
     printf("\n\n Error: reserved interrupt code used \n\n");
-    asm("nop");
-}
-
-/*
-    Should never be called since no external and/or supervisor interrupts should be generated
-*/
-void isr_supervisor_software(void)
-{
-    printf("\n\n Error: interrupt code 1 used \n\n");
-    asm("nop");
-}
-void isr_supervisor_timer(void)
-{
-    printf("\n\n Error: interrupt code 5 used \n\n");
-    asm("nop");
-}
-void isr_supervisor_external(void)
-{
-    printf("\n\n Error: interrupt code 9 used \n\n");
-    asm("nop");
-}
-void isr_user_external(void)
-{
-    printf("\n\n Error: interrupt code 8 used \n\n");
-    asm("nop");
-}
-void isr_machine_external(void)
-{
-    printf("\n\n Error: interrupt code 11 used \n\n");
-    asm("nop");
 }
