@@ -12,7 +12,7 @@ CWD         ?= $(realpath $(CURDIR))
 FLASH_ADDR  ?= 0x1000  # 2nd stage bootloader flash offset
 DOCKER      ?= docker run -it --rm -v $(CWD):$(CWD) -v $(MDK):$(MDK) -w $(CWD) espressif/idf
 TOOLCHAIN   ?= $(DOCKER) xtensa-esp32-elf
-SRCS        ?= $(MDK)/$(ARCH)/boot.c $(SOURCES)
+SRCS        ?= $(MDK)/$(ARCH)/boot.c $(SOURCES) $(EXTRA_SOURCES)
 
 build: $(PROG).bin
 

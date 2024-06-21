@@ -12,7 +12,7 @@ CWD         ?= $(realpath $(CURDIR))
 FLASH_ADDR  ?= 0  # 2nd stage bootloader flash offset
 DOCKER      ?= docker run -it --rm -v $(CWD):$(CWD) -v $(RISC_V_TE):$(RISC_V_TE) -w $(CWD) mdashnet/riscv
 TOOLCHAIN   ?= $(DOCKER) riscv-none-elf
-SRCS        ?= $(RISC_V_TE)/$(ARCH)/boot.c $(SOURCES)
+SRCS        ?= $(RISC_V_TE)/$(ARCH)/boot.c $(SOURCES) $(EXTRA_SOURCES)
 
 build: $(PROG).bin
 
