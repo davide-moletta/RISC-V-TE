@@ -14,7 +14,7 @@ int main(void)
 {
     wdt_disable(); // Disable watchdog to avoid continuous resets
 
-    printf("Configuring interrupt vector table ...\n");
+    printf("\n\nConfiguring interrupt vector table ...\n");
 
     asm("la t0, interrupt_vector_table"); // Load vector table address
     asm("ori t0, t0, 1");                 // Set MODE bit to 1 to enable vectored interrupts

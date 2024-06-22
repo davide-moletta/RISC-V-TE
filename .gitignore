@@ -1,3 +1,6 @@
 # Ignore binaries and assembly dump files
 src/shadowstack/firmware.*
 dump.asm
+openocd/*
+TODO
+.vscode/*

@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <user_code.h>
+#include <usercode/user_code.h>
 
 void user_mode_entry_point(void) __attribute__((section(".user_code")));
 
@@ -19,5 +19,7 @@ void user_mode_entry_point(void)
     user_code();
     
     printf("--- End of user code ---\n");
+
+    asm("nop");
     asm("ret");
 }
