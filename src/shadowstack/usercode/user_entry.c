@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <user_code.h>
 
-void user_mode_entry_point(void)           __attribute__((section(".user_code")));
+void user_mode_entry_point(void) __attribute__((section(".user_code")));
 
 void user_mode_entry_point(void)
 {
@@ -13,10 +13,11 @@ void user_mode_entry_point(void)
     
     // asm("j main + 1");
 
-    printf("Hello from user mode!\n");
+    printf("--- Start of user code ---\n");
 
     // call function here
     user_code();
     
+    printf("--- End of user code ---\n");
     asm("ret");
 }

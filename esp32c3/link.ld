@@ -14,6 +14,8 @@ SECTIONS {
   
   .text :{ *(.text) *(.text*) } > iram
 
+  .user_code :{ KEEP(*(.user_code)) }  > iram
+
   .data : {
     . = ALIGN(16);
     _sdata = .;
@@ -43,7 +45,7 @@ SECTIONS {
     . = ALIGN(16);
     _ebss = .;
   } > dram
-
+  
   . = ALIGN(16);
   PROVIDE(end = .);
   PROVIDE(_end = .);
