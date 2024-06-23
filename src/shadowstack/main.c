@@ -10,6 +10,9 @@
     white: 18
 */
 
+// run riscv32-esp-elf-gdb -x .gdbinit src/shadowstack/firmware.elf 
+// after openocd -f openocd/esp32c3-builtin.cfg 
+
 int main(void)
 {
     wdt_disable(); // Disable watchdog to avoid continuous resets
