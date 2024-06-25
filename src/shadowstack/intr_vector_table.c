@@ -1,18 +1,19 @@
 #include <stdio.h>
 
-void interrupt_vector_table(void)           __attribute__((section(".intr_vector_table")));
+void interrupt_vector_table(void)        __attribute__((section(".intr_vector_table")));
 
-void synchronous_exception_handler(void)    __attribute__((section(".intr_service_routines")));
-void isr_user_software(void)                __attribute__((section(".intr_service_routines")));
-void isr_supervisor_software(void)          __attribute__((section(".intr_service_routines")));
-void isr_reserved(void)                     __attribute__((section(".intr_service_routines")));
-void isr_machine_software(void)             __attribute__((section(".intr_service_routines")));
-void isr_user_timer(void)                   __attribute__((section(".intr_service_routines")));
-void isr_supervisor_timer(void)             __attribute__((section(".intr_service_routines")));
-void isr_machine_timer(void)                __attribute__((section(".intr_service_routines")));
-void isr_user_external(void)                __attribute__((section(".intr_service_routines")));
-void isr_supervisor_external(void)          __attribute__((section(".intr_service_routines")));
-void isr_machine_external(void)             __attribute__((section(".intr_service_routines")));
+void synchronous_exception_handler(void) __attribute__((section(".intr_service_routines")));
+void ecall_handler()                     __attribute__((section(".intr_service_routines")));
+void isr_user_software(void)             __attribute__((section(".intr_service_routines")));
+void isr_supervisor_software(void)       __attribute__((section(".intr_service_routines")));
+void isr_reserved(void)                  __attribute__((section(".intr_service_routines")));
+void isr_machine_software(void)          __attribute__((section(".intr_service_routines")));
+void isr_user_timer(void)                __attribute__((section(".intr_service_routines")));
+void isr_supervisor_timer(void)          __attribute__((section(".intr_service_routines")));
+void isr_machine_timer(void)             __attribute__((section(".intr_service_routines")));
+void isr_user_external(void)             __attribute__((section(".intr_service_routines")));
+void isr_supervisor_external(void)       __attribute__((section(".intr_service_routines")));
+void isr_machine_external(void)          __attribute__((section(".intr_service_routines")));
 
 /*
 Interrupt | Exception Code | Description
@@ -68,7 +69,140 @@ void interrupt_vector_table(void)
 
 void synchronous_exception_handler(void)
 {
-    printf("Synchronous exception or user software error generated\n");
+    // Save registers and state
+    asm("add sp, sp, -160\n\t"
+        "sw ra, 4(sp)\n\t"
+        "sw tp, 16(sp)\n\t"
+        "sw t0, 20(sp)\n\t"
+        "sw t1, 24(sp)\n\t"
+        "sw t2, 28(sp)\n\t"
+        "sw s0, 32(sp)\n\t"
+        "sw s1, 36(sp)\n\t"
+        "sw a0, 40(sp)\n\t"
+        "sw a1, 44(sp)\n\t"
+        "sw a2, 48(sp)\n\t"
+        "sw a3, 52(sp)\n\t"
+        "sw a4, 56(sp)\n\t"
+        "sw a5, 60(sp)\n\t"
+        "sw a6, 64(sp)\n\t"
+        "sw a7, 68(sp)\n\t"
+        "sw s2, 72(sp)\n\t"
+        "sw s3, 76(sp)\n\t"
+        "sw s4, 80(sp)\n\t"
+        "sw s5, 84(sp)\n\t"
+        "sw s6, 88(sp)\n\t"
+        "sw s7, 92(sp)\n\t"
+        "sw s8, 96(sp)\n\t"
+        "sw s9, 100(sp)\n\t"
+        "sw s10, 104(sp)\n\t"
+        "sw s11, 108(sp)\n\t"
+        "sw t3, 112(sp)\n\t"
+        "sw t4, 116(sp)\n\t"
+        "sw t5, 120(sp)\n\t"
+        "sw t6, 124(sp)\n\t"
+	);
+
+	/*
+        MCAUSE CSR Shown as 
+
+        bit(s) position
+        ---------------
+        | bit(s) name |
+        ---------------
+        bit(s) length
+
+
+        31          30               0
+        ------------------------------
+        | Interrupt | Exception Code |
+        ------------------------------
+             1             31
+
+        Interrupt is a single bit set to 1 for interrupts and to 0 for exceptions
+        Exception code contains the code of what triggered the exception/interrupt
+    */
+
+    // Check the cause of the exception
+    unsigned long mcause;
+    asm volatile ("csrr %0, mcause" : "=r" (mcause));
+
+	printf("mcause: %ld", mcause);
+
+	// Check the MSB (bit 31) of the mcause register
+    if (mcause & 0x80000000) { isr_user_software(); } // If it is set call the user software interrupt
+
+	// Check if it's an environment call from U-mode
+    if ((mcause & 0xFF) == 8) { ecall_handler(); } // If it is call the environment call handler
+
+    // Adjust the mepc to point to the next instruction after ecall
+    asm("csrr t0, mepc\n\t"
+        "addi t0, t0, 4\n\t"
+        "csrw mepc, t0\n\t"
+	);
+
+    // Restore registers and state
+    asm("lw ra, 4(sp)\n\t"
+        "lw tp, 16(sp)\n\t"
+        "lw t0, 20(sp)\n\t"
+        "lw t1, 24(sp)\n\t"
+        "lw t2, 28(sp)\n\t"
+        "lw s0, 32(sp)\n\t"
+        "lw s1, 36(sp)\n\t"
+        "lw a0, 40(sp)\n\t"
+        "lw a1, 44(sp)\n\t"
+        "lw a2, 48(sp)\n\t"
+        "lw a3, 52(sp)\n\t"
+        "lw a4, 56(sp)\n\t"
+        "lw a5, 60(sp)\n\t"
+        "lw a6, 64(sp)\n\t"
+        "lw a7, 68(sp)\n\t"
+        "lw s2, 72(sp)\n\t"
+        "lw s3, 76(sp)\n\t"
+        "lw s4, 80(sp)\n\t"
+        "lw s5, 84(sp)\n\t"
+        "lw s6, 88(sp)\n\t"
+        "lw s7, 92(sp)\n\t"
+        "lw s8, 96(sp)\n\t"
+        "lw s9, 100(sp)\n\t"
+        "lw s10, 104(sp)\n\t"
+        "lw s11, 108(sp)\n\t"
+        "lw t3, 112(sp)\n\t"
+        "lw t4, 116(sp)\n\t"
+        "lw t5, 120(sp)\n\t"
+        "lw t6, 124(sp)\n\t"
+        "add sp, sp, 160\n\t"
+    );
+
+	asm("mret");
+}
+
+void ecall_handler()
+{
+	// Save state
+    asm("add sp, sp, -16\n\t"
+        "sw ra, 12(sp)\n\t"
+        "sw s0, 8(sp)\n\t"
+	);
+
+    printf("Woah, you made an environment call\n");
+
+	/*
+		HANDLE ECALL
+	*/
+
+	// Restore state
+    asm("lw ra, 12(sp)\n\t"
+        "lw s0, 8(sp)\n\t"
+        "add sp, sp, 16\n\t"
+	);
+
+    // Return to synchronous_exception_handler to continue processing
+    asm("ret");
+}
+
+void isr_user_software(void)
+{
+    printf("User software interrupt generated");
     // Open stack pointer and save values
     asm("add sp, sp, -128\n\t"
         "sw	ra, 0(sp)\n\t"
@@ -102,41 +236,9 @@ void synchronous_exception_handler(void)
 	    "sw	t5, 112(sp)\n\t"
 	    "sw	t6, 116(sp)\n\t");
 
-    // Handling procedure
-
-    // Read mepc, increment to next instruction and set for mret
-    asm("csrr t1, mepc\n\t"
-        "addi t1, t1, 4\n\t"
-        "csrw mepc, t1\n\t");
-
     /*
-        MCAUSE CSR
-        XLEN-1      XLEN-2           0
-        ------------------------------
-        | Interrupt | Exception Code |
-        ------------------------------
-             1           XLEN-1
-
-        Interrupt is a single bit set to 1 for interrupts and to 0 for exceptions
-        Exception code contains the code of what triggered the exception/interrupt
+        Put here your handling routine
     */
-
-    // Read mcause to understand what caused the exception
-    asm("csrr t0, mcause");
-    
-    asm("li t2, 0x80000000"); // Load only 1 in MSB
-    asm("and t2, t2, t0");    // And to retrieve only MSB which is interrupt bit
-
-    // If the interrupt bit is enabled then we have that this is an interrupt with code 0 aka user software interrupt
-    // so we jump to the correct handler, otherwise we have an exception
-    asm("beq t2, 1, isr_user_software"); 
-
-    asm("li t3, 0x7FFFFFFF"); // Load only 1 except 0 in MSB
-    asm("and t3, t3, t0");    // And to retrieve the exception code
-    
-
-    asm("beq t3, t3, 8"); // If the code is 8 we have an environment call from user mode
-
 
     // Restore values and close stack pointer
     asm("lw	ra, 0(sp)\n\t"
@@ -169,46 +271,609 @@ void synchronous_exception_handler(void)
 	    "lw	t4, 108(sp)\n\t"
 	    "lw	t5, 112(sp)\n\t"
 	    "lw	t6, 116(sp)\n\t"
-        "add sp, sp, -128\n\t");
+        "add sp, sp, 128\n\t");
 
     asm("mret");
-}
-
-void isr_user_software(void)
-{
-    printf("User software interrupt generated");
 }
 void isr_supervisor_software(void)
 {
     printf("Supervisor software interrupt generated");
+    // Open stack pointer and save values
+    asm("add sp, sp, -128\n\t"
+        "sw	ra, 0(sp)\n\t"
+        "sw	gp, 4(sp)\n\t"
+	    "sw	tp, 8(sp)\n\t"
+	    "sw	t0, 12(sp)\n\t"
+	    "sw	t1, 16(sp)\n\t"
+	    "sw	t2, 20(sp)\n\t"
+	    "sw	s0, 24(sp)\n\t"
+	    "sw	s1, 28(sp)\n\t"
+	    "sw	a0, 32(sp)\n\t"
+	    "sw	a1, 36(sp)\n\t"
+	    "sw	a2, 40(sp)\n\t"
+	    "sw	a3, 44(sp)\n\t"
+	    "sw	a4, 48(sp)\n\t"
+	    "sw	a5, 52(sp)\n\t"
+	    "sw	a6, 56(sp)\n\t"
+	    "sw	a7, 60(sp)\n\t"
+	    "sw	s2, 64(sp)\n\t"
+	    "sw	s3, 68(sp)\n\t"
+	    "sw	s4, 72(sp)\n\t"
+	    "sw	s5, 76(sp)\n\t"
+	    "sw	s6, 80(sp)\n\t"
+	    "sw	s7, 84(sp)\n\t"
+	    "sw	s8, 88(sp)\n\t"
+	    "sw	s9, 92(sp)\n\t"
+	    "sw	s10, 96(sp)\n\t"
+	    "sw	s11, 100(sp)\n\t"
+	    "sw	t3, 104(sp)\n\t"
+	    "sw	t4, 108(sp)\n\t"
+	    "sw	t5, 112(sp)\n\t"
+	    "sw	t6, 116(sp)\n\t");
+
+    /*
+        Put here your handling routine
+    */
+
+    // Restore values and close stack pointer
+    asm("lw	ra, 0(sp)\n\t"
+        "lw	gp, 4(sp)\n\t"
+	    "lw	tp, 8(sp)\n\t"
+	    "lw	t0, 12(sp)\n\t"
+	    "lw	t1, 16(sp)\n\t"
+	    "lw	t2, 20(sp)\n\t"
+	    "lw	s0, 24(sp)\n\t"
+	    "lw	s1, 28(sp)\n\t"
+	    "lw	a0, 32(sp)\n\t"
+	    "lw	a1, 36(sp)\n\t"
+	    "lw	a2, 40(sp)\n\t"
+	    "lw	a3, 44(sp)\n\t"
+	    "lw	a4, 48(sp)\n\t"
+	    "lw	a5, 52(sp)\n\t"
+	    "lw	a6, 56(sp)\n\t"
+	    "lw	a7, 60(sp)\n\t"
+	    "lw	s2, 64(sp)\n\t"
+	    "lw	s3, 68(sp)\n\t"
+	    "lw	s4, 72(sp)\n\t"
+	    "lw	s5, 76(sp)\n\t"
+	    "lw	s6, 80(sp)\n\t"
+	    "lw	s7, 84(sp)\n\t"
+	    "lw	s8, 88(sp)\n\t"
+	    "lw	s9, 92(sp)\n\t"
+	    "lw	s10, 96(sp)\n\t"
+	    "lw	s11, 100(sp)\n\t"
+	    "lw	t3, 104(sp)\n\t"
+	    "lw	t4, 108(sp)\n\t"
+	    "lw	t5, 112(sp)\n\t"
+	    "lw	t6, 116(sp)\n\t"
+        "add sp, sp, 128\n\t");
+
+    asm("mret");
 }
 void isr_machine_software(void)
 {
     printf("Machine software interrupt generated\n");
+    // Open stack pointer and save values
+    asm("add sp, sp, -128\n\t"
+        "sw	ra, 0(sp)\n\t"
+        "sw	gp, 4(sp)\n\t"
+	    "sw	tp, 8(sp)\n\t"
+	    "sw	t0, 12(sp)\n\t"
+	    "sw	t1, 16(sp)\n\t"
+	    "sw	t2, 20(sp)\n\t"
+	    "sw	s0, 24(sp)\n\t"
+	    "sw	s1, 28(sp)\n\t"
+	    "sw	a0, 32(sp)\n\t"
+	    "sw	a1, 36(sp)\n\t"
+	    "sw	a2, 40(sp)\n\t"
+	    "sw	a3, 44(sp)\n\t"
+	    "sw	a4, 48(sp)\n\t"
+	    "sw	a5, 52(sp)\n\t"
+	    "sw	a6, 56(sp)\n\t"
+	    "sw	a7, 60(sp)\n\t"
+	    "sw	s2, 64(sp)\n\t"
+	    "sw	s3, 68(sp)\n\t"
+	    "sw	s4, 72(sp)\n\t"
+	    "sw	s5, 76(sp)\n\t"
+	    "sw	s6, 80(sp)\n\t"
+	    "sw	s7, 84(sp)\n\t"
+	    "sw	s8, 88(sp)\n\t"
+	    "sw	s9, 92(sp)\n\t"
+	    "sw	s10, 96(sp)\n\t"
+	    "sw	s11, 100(sp)\n\t"
+	    "sw	t3, 104(sp)\n\t"
+	    "sw	t4, 108(sp)\n\t"
+	    "sw	t5, 112(sp)\n\t"
+	    "sw	t6, 116(sp)\n\t");
+
+    /*
+        Put here your handling routine
+    */
+
+    // Restore values and close stack pointer
+    asm("lw	ra, 0(sp)\n\t"
+        "lw	gp, 4(sp)\n\t"
+	    "lw	tp, 8(sp)\n\t"
+	    "lw	t0, 12(sp)\n\t"
+	    "lw	t1, 16(sp)\n\t"
+	    "lw	t2, 20(sp)\n\t"
+	    "lw	s0, 24(sp)\n\t"
+	    "lw	s1, 28(sp)\n\t"
+	    "lw	a0, 32(sp)\n\t"
+	    "lw	a1, 36(sp)\n\t"
+	    "lw	a2, 40(sp)\n\t"
+	    "lw	a3, 44(sp)\n\t"
+	    "lw	a4, 48(sp)\n\t"
+	    "lw	a5, 52(sp)\n\t"
+	    "lw	a6, 56(sp)\n\t"
+	    "lw	a7, 60(sp)\n\t"
+	    "lw	s2, 64(sp)\n\t"
+	    "lw	s3, 68(sp)\n\t"
+	    "lw	s4, 72(sp)\n\t"
+	    "lw	s5, 76(sp)\n\t"
+	    "lw	s6, 80(sp)\n\t"
+	    "lw	s7, 84(sp)\n\t"
+	    "lw	s8, 88(sp)\n\t"
+	    "lw	s9, 92(sp)\n\t"
+	    "lw	s10, 96(sp)\n\t"
+	    "lw	s11, 100(sp)\n\t"
+	    "lw	t3, 104(sp)\n\t"
+	    "lw	t4, 108(sp)\n\t"
+	    "lw	t5, 112(sp)\n\t"
+	    "lw	t6, 116(sp)\n\t"
+        "add sp, sp, 128\n\t");
+
+    asm("mret");
 }
 void isr_user_timer(void)
 {
     printf("User timer interrupt generated\n");
+    // Open stack pointer and save values
+    asm("add sp, sp, -128\n\t"
+        "sw	ra, 0(sp)\n\t"
+        "sw	gp, 4(sp)\n\t"
+	    "sw	tp, 8(sp)\n\t"
+	    "sw	t0, 12(sp)\n\t"
+	    "sw	t1, 16(sp)\n\t"
+	    "sw	t2, 20(sp)\n\t"
+	    "sw	s0, 24(sp)\n\t"
+	    "sw	s1, 28(sp)\n\t"
+	    "sw	a0, 32(sp)\n\t"
+	    "sw	a1, 36(sp)\n\t"
+	    "sw	a2, 40(sp)\n\t"
+	    "sw	a3, 44(sp)\n\t"
+	    "sw	a4, 48(sp)\n\t"
+	    "sw	a5, 52(sp)\n\t"
+	    "sw	a6, 56(sp)\n\t"
+	    "sw	a7, 60(sp)\n\t"
+	    "sw	s2, 64(sp)\n\t"
+	    "sw	s3, 68(sp)\n\t"
+	    "sw	s4, 72(sp)\n\t"
+	    "sw	s5, 76(sp)\n\t"
+	    "sw	s6, 80(sp)\n\t"
+	    "sw	s7, 84(sp)\n\t"
+	    "sw	s8, 88(sp)\n\t"
+	    "sw	s9, 92(sp)\n\t"
+	    "sw	s10, 96(sp)\n\t"
+	    "sw	s11, 100(sp)\n\t"
+	    "sw	t3, 104(sp)\n\t"
+	    "sw	t4, 108(sp)\n\t"
+	    "sw	t5, 112(sp)\n\t"
+	    "sw	t6, 116(sp)\n\t");
+
+    /*
+        Put here your handling routine
+    */
+
+    // Restore values and close stack pointer
+    asm("lw	ra, 0(sp)\n\t"
+        "lw	gp, 4(sp)\n\t"
+	    "lw	tp, 8(sp)\n\t"
+	    "lw	t0, 12(sp)\n\t"
+	    "lw	t1, 16(sp)\n\t"
+	    "lw	t2, 20(sp)\n\t"
+	    "lw	s0, 24(sp)\n\t"
+	    "lw	s1, 28(sp)\n\t"
+	    "lw	a0, 32(sp)\n\t"
+	    "lw	a1, 36(sp)\n\t"
+	    "lw	a2, 40(sp)\n\t"
+	    "lw	a3, 44(sp)\n\t"
+	    "lw	a4, 48(sp)\n\t"
+	    "lw	a5, 52(sp)\n\t"
+	    "lw	a6, 56(sp)\n\t"
+	    "lw	a7, 60(sp)\n\t"
+	    "lw	s2, 64(sp)\n\t"
+	    "lw	s3, 68(sp)\n\t"
+	    "lw	s4, 72(sp)\n\t"
+	    "lw	s5, 76(sp)\n\t"
+	    "lw	s6, 80(sp)\n\t"
+	    "lw	s7, 84(sp)\n\t"
+	    "lw	s8, 88(sp)\n\t"
+	    "lw	s9, 92(sp)\n\t"
+	    "lw	s10, 96(sp)\n\t"
+	    "lw	s11, 100(sp)\n\t"
+	    "lw	t3, 104(sp)\n\t"
+	    "lw	t4, 108(sp)\n\t"
+	    "lw	t5, 112(sp)\n\t"
+	    "lw	t6, 116(sp)\n\t"
+        "add sp, sp, 128\n\t");
+
+    asm("mret");
 }
 void isr_supervisor_timer(void)
 {
     printf("Supervisor timer interrupt generated");
+    // Open stack pointer and save values
+    asm("add sp, sp, -128\n\t"
+        "sw	ra, 0(sp)\n\t"
+        "sw	gp, 4(sp)\n\t"
+	    "sw	tp, 8(sp)\n\t"
+	    "sw	t0, 12(sp)\n\t"
+	    "sw	t1, 16(sp)\n\t"
+	    "sw	t2, 20(sp)\n\t"
+	    "sw	s0, 24(sp)\n\t"
+	    "sw	s1, 28(sp)\n\t"
+	    "sw	a0, 32(sp)\n\t"
+	    "sw	a1, 36(sp)\n\t"
+	    "sw	a2, 40(sp)\n\t"
+	    "sw	a3, 44(sp)\n\t"
+	    "sw	a4, 48(sp)\n\t"
+	    "sw	a5, 52(sp)\n\t"
+	    "sw	a6, 56(sp)\n\t"
+	    "sw	a7, 60(sp)\n\t"
+	    "sw	s2, 64(sp)\n\t"
+	    "sw	s3, 68(sp)\n\t"
+	    "sw	s4, 72(sp)\n\t"
+	    "sw	s5, 76(sp)\n\t"
+	    "sw	s6, 80(sp)\n\t"
+	    "sw	s7, 84(sp)\n\t"
+	    "sw	s8, 88(sp)\n\t"
+	    "sw	s9, 92(sp)\n\t"
+	    "sw	s10, 96(sp)\n\t"
+	    "sw	s11, 100(sp)\n\t"
+	    "sw	t3, 104(sp)\n\t"
+	    "sw	t4, 108(sp)\n\t"
+	    "sw	t5, 112(sp)\n\t"
+	    "sw	t6, 116(sp)\n\t");
+
+    /*
+        Put here your handling routine
+    */
+
+    // Restore values and close stack pointer
+    asm("lw	ra, 0(sp)\n\t"
+        "lw	gp, 4(sp)\n\t"
+	    "lw	tp, 8(sp)\n\t"
+	    "lw	t0, 12(sp)\n\t"
+	    "lw	t1, 16(sp)\n\t"
+	    "lw	t2, 20(sp)\n\t"
+	    "lw	s0, 24(sp)\n\t"
+	    "lw	s1, 28(sp)\n\t"
+	    "lw	a0, 32(sp)\n\t"
+	    "lw	a1, 36(sp)\n\t"
+	    "lw	a2, 40(sp)\n\t"
+	    "lw	a3, 44(sp)\n\t"
+	    "lw	a4, 48(sp)\n\t"
+	    "lw	a5, 52(sp)\n\t"
+	    "lw	a6, 56(sp)\n\t"
+	    "lw	a7, 60(sp)\n\t"
+	    "lw	s2, 64(sp)\n\t"
+	    "lw	s3, 68(sp)\n\t"
+	    "lw	s4, 72(sp)\n\t"
+	    "lw	s5, 76(sp)\n\t"
+	    "lw	s6, 80(sp)\n\t"
+	    "lw	s7, 84(sp)\n\t"
+	    "lw	s8, 88(sp)\n\t"
+	    "lw	s9, 92(sp)\n\t"
+	    "lw	s10, 96(sp)\n\t"
+	    "lw	s11, 100(sp)\n\t"
+	    "lw	t3, 104(sp)\n\t"
+	    "lw	t4, 108(sp)\n\t"
+	    "lw	t5, 112(sp)\n\t"
+	    "lw	t6, 116(sp)\n\t"
+        "add sp, sp, 128\n\t");
+
+    asm("mret");
 }
 void isr_machine_timer(void)
 {
     printf("Machine timer interrupt generated\n");
+    // Open stack pointer and save values
+    asm("add sp, sp, -128\n\t"
+        "sw	ra, 0(sp)\n\t"
+        "sw	gp, 4(sp)\n\t"
+	    "sw	tp, 8(sp)\n\t"
+	    "sw	t0, 12(sp)\n\t"
+	    "sw	t1, 16(sp)\n\t"
+	    "sw	t2, 20(sp)\n\t"
+	    "sw	s0, 24(sp)\n\t"
+	    "sw	s1, 28(sp)\n\t"
+	    "sw	a0, 32(sp)\n\t"
+	    "sw	a1, 36(sp)\n\t"
+	    "sw	a2, 40(sp)\n\t"
+	    "sw	a3, 44(sp)\n\t"
+	    "sw	a4, 48(sp)\n\t"
+	    "sw	a5, 52(sp)\n\t"
+	    "sw	a6, 56(sp)\n\t"
+	    "sw	a7, 60(sp)\n\t"
+	    "sw	s2, 64(sp)\n\t"
+	    "sw	s3, 68(sp)\n\t"
+	    "sw	s4, 72(sp)\n\t"
+	    "sw	s5, 76(sp)\n\t"
+	    "sw	s6, 80(sp)\n\t"
+	    "sw	s7, 84(sp)\n\t"
+	    "sw	s8, 88(sp)\n\t"
+	    "sw	s9, 92(sp)\n\t"
+	    "sw	s10, 96(sp)\n\t"
+	    "sw	s11, 100(sp)\n\t"
+	    "sw	t3, 104(sp)\n\t"
+	    "sw	t4, 108(sp)\n\t"
+	    "sw	t5, 112(sp)\n\t"
+	    "sw	t6, 116(sp)\n\t");
+
+    /*
+        Put here your handling routine
+    */
+
+    // Restore values and close stack pointer
+    asm("lw	ra, 0(sp)\n\t"
+        "lw	gp, 4(sp)\n\t"
+	    "lw	tp, 8(sp)\n\t"
+	    "lw	t0, 12(sp)\n\t"
+	    "lw	t1, 16(sp)\n\t"
+	    "lw	t2, 20(sp)\n\t"
+	    "lw	s0, 24(sp)\n\t"
+	    "lw	s1, 28(sp)\n\t"
+	    "lw	a0, 32(sp)\n\t"
+	    "lw	a1, 36(sp)\n\t"
+	    "lw	a2, 40(sp)\n\t"
+	    "lw	a3, 44(sp)\n\t"
+	    "lw	a4, 48(sp)\n\t"
+	    "lw	a5, 52(sp)\n\t"
+	    "lw	a6, 56(sp)\n\t"
+	    "lw	a7, 60(sp)\n\t"
+	    "lw	s2, 64(sp)\n\t"
+	    "lw	s3, 68(sp)\n\t"
+	    "lw	s4, 72(sp)\n\t"
+	    "lw	s5, 76(sp)\n\t"
+	    "lw	s6, 80(sp)\n\t"
+	    "lw	s7, 84(sp)\n\t"
+	    "lw	s8, 88(sp)\n\t"
+	    "lw	s9, 92(sp)\n\t"
+	    "lw	s10, 96(sp)\n\t"
+	    "lw	s11, 100(sp)\n\t"
+	    "lw	t3, 104(sp)\n\t"
+	    "lw	t4, 108(sp)\n\t"
+	    "lw	t5, 112(sp)\n\t"
+	    "lw	t6, 116(sp)\n\t"
+        "add sp, sp, 128\n\t");
+
+    asm("mret");
 }
 void isr_user_external(void)
 {
     printf("User external interrupt generated");
+    // Open stack pointer and save values
+    asm("add sp, sp, -128\n\t"
+        "sw	ra, 0(sp)\n\t"
+        "sw	gp, 4(sp)\n\t"
+	    "sw	tp, 8(sp)\n\t"
+	    "sw	t0, 12(sp)\n\t"
+	    "sw	t1, 16(sp)\n\t"
+	    "sw	t2, 20(sp)\n\t"
+	    "sw	s0, 24(sp)\n\t"
+	    "sw	s1, 28(sp)\n\t"
+	    "sw	a0, 32(sp)\n\t"
+	    "sw	a1, 36(sp)\n\t"
+	    "sw	a2, 40(sp)\n\t"
+	    "sw	a3, 44(sp)\n\t"
+	    "sw	a4, 48(sp)\n\t"
+	    "sw	a5, 52(sp)\n\t"
+	    "sw	a6, 56(sp)\n\t"
+	    "sw	a7, 60(sp)\n\t"
+	    "sw	s2, 64(sp)\n\t"
+	    "sw	s3, 68(sp)\n\t"
+	    "sw	s4, 72(sp)\n\t"
+	    "sw	s5, 76(sp)\n\t"
+	    "sw	s6, 80(sp)\n\t"
+	    "sw	s7, 84(sp)\n\t"
+	    "sw	s8, 88(sp)\n\t"
+	    "sw	s9, 92(sp)\n\t"
+	    "sw	s10, 96(sp)\n\t"
+	    "sw	s11, 100(sp)\n\t"
+	    "sw	t3, 104(sp)\n\t"
+	    "sw	t4, 108(sp)\n\t"
+	    "sw	t5, 112(sp)\n\t"
+	    "sw	t6, 116(sp)\n\t");
+
+    /*
+        Put here your handling routine
+    */
+
+    // Restore values and close stack pointer
+    asm("lw	ra, 0(sp)\n\t"
+        "lw	gp, 4(sp)\n\t"
+	    "lw	tp, 8(sp)\n\t"
+	    "lw	t0, 12(sp)\n\t"
+	    "lw	t1, 16(sp)\n\t"
+	    "lw	t2, 20(sp)\n\t"
+	    "lw	s0, 24(sp)\n\t"
+	    "lw	s1, 28(sp)\n\t"
+	    "lw	a0, 32(sp)\n\t"
+	    "lw	a1, 36(sp)\n\t"
+	    "lw	a2, 40(sp)\n\t"
+	    "lw	a3, 44(sp)\n\t"
+	    "lw	a4, 48(sp)\n\t"
+	    "lw	a5, 52(sp)\n\t"
+	    "lw	a6, 56(sp)\n\t"
+	    "lw	a7, 60(sp)\n\t"
+	    "lw	s2, 64(sp)\n\t"
+	    "lw	s3, 68(sp)\n\t"
+	    "lw	s4, 72(sp)\n\t"
+	    "lw	s5, 76(sp)\n\t"
+	    "lw	s6, 80(sp)\n\t"
+	    "lw	s7, 84(sp)\n\t"
+	    "lw	s8, 88(sp)\n\t"
+	    "lw	s9, 92(sp)\n\t"
+	    "lw	s10, 96(sp)\n\t"
+	    "lw	s11, 100(sp)\n\t"
+	    "lw	t3, 104(sp)\n\t"
+	    "lw	t4, 108(sp)\n\t"
+	    "lw	t5, 112(sp)\n\t"
+	    "lw	t6, 116(sp)\n\t"
+        "add sp, sp, 128\n\t");
+
+    asm("mret");
 }
 void isr_supervisor_external(void)
 {
     printf("Supervisor external interrupt generated");
+    // Open stack pointer and save values
+    asm("add sp, sp, -128\n\t"
+        "sw	ra, 0(sp)\n\t"
+        "sw	gp, 4(sp)\n\t"
+	    "sw	tp, 8(sp)\n\t"
+	    "sw	t0, 12(sp)\n\t"
+	    "sw	t1, 16(sp)\n\t"
+	    "sw	t2, 20(sp)\n\t"
+	    "sw	s0, 24(sp)\n\t"
+	    "sw	s1, 28(sp)\n\t"
+	    "sw	a0, 32(sp)\n\t"
+	    "sw	a1, 36(sp)\n\t"
+	    "sw	a2, 40(sp)\n\t"
+	    "sw	a3, 44(sp)\n\t"
+	    "sw	a4, 48(sp)\n\t"
+	    "sw	a5, 52(sp)\n\t"
+	    "sw	a6, 56(sp)\n\t"
+	    "sw	a7, 60(sp)\n\t"
+	    "sw	s2, 64(sp)\n\t"
+	    "sw	s3, 68(sp)\n\t"
+	    "sw	s4, 72(sp)\n\t"
+	    "sw	s5, 76(sp)\n\t"
+	    "sw	s6, 80(sp)\n\t"
+	    "sw	s7, 84(sp)\n\t"
+	    "sw	s8, 88(sp)\n\t"
+	    "sw	s9, 92(sp)\n\t"
+	    "sw	s10, 96(sp)\n\t"
+	    "sw	s11, 100(sp)\n\t"
+	    "sw	t3, 104(sp)\n\t"
+	    "sw	t4, 108(sp)\n\t"
+	    "sw	t5, 112(sp)\n\t"
+	    "sw	t6, 116(sp)\n\t");
+
+    /*
+        Put here your handling routine
+    */
+
+    // Restore values and close stack pointer
+    asm("lw	ra, 0(sp)\n\t"
+        "lw	gp, 4(sp)\n\t"
+	    "lw	tp, 8(sp)\n\t"
+	    "lw	t0, 12(sp)\n\t"
+	    "lw	t1, 16(sp)\n\t"
+	    "lw	t2, 20(sp)\n\t"
+	    "lw	s0, 24(sp)\n\t"
+	    "lw	s1, 28(sp)\n\t"
+	    "lw	a0, 32(sp)\n\t"
+	    "lw	a1, 36(sp)\n\t"
+	    "lw	a2, 40(sp)\n\t"
+	    "lw	a3, 44(sp)\n\t"
+	    "lw	a4, 48(sp)\n\t"
+	    "lw	a5, 52(sp)\n\t"
+	    "lw	a6, 56(sp)\n\t"
+	    "lw	a7, 60(sp)\n\t"
+	    "lw	s2, 64(sp)\n\t"
+	    "lw	s3, 68(sp)\n\t"
+	    "lw	s4, 72(sp)\n\t"
+	    "lw	s5, 76(sp)\n\t"
+	    "lw	s6, 80(sp)\n\t"
+	    "lw	s7, 84(sp)\n\t"
+	    "lw	s8, 88(sp)\n\t"
+	    "lw	s9, 92(sp)\n\t"
+	    "lw	s10, 96(sp)\n\t"
+	    "lw	s11, 100(sp)\n\t"
+	    "lw	t3, 104(sp)\n\t"
+	    "lw	t4, 108(sp)\n\t"
+	    "lw	t5, 112(sp)\n\t"
+	    "lw	t6, 116(sp)\n\t"
+        "add sp, sp, 128\n\t");
+
+    asm("mret");
 }
 void isr_machine_external(void)
 {
     printf("Machine external interrupt generated");
+    // Open stack pointer and save values
+    asm("add sp, sp, -128\n\t"
+        "sw	ra, 0(sp)\n\t"
+        "sw	gp, 4(sp)\n\t"
+	    "sw	tp, 8(sp)\n\t"
+	    "sw	t0, 12(sp)\n\t"
+	    "sw	t1, 16(sp)\n\t"
+	    "sw	t2, 20(sp)\n\t"
+	    "sw	s0, 24(sp)\n\t"
+	    "sw	s1, 28(sp)\n\t"
+	    "sw	a0, 32(sp)\n\t"
+	    "sw	a1, 36(sp)\n\t"
+	    "sw	a2, 40(sp)\n\t"
+	    "sw	a3, 44(sp)\n\t"
+	    "sw	a4, 48(sp)\n\t"
+	    "sw	a5, 52(sp)\n\t"
+	    "sw	a6, 56(sp)\n\t"
+	    "sw	a7, 60(sp)\n\t"
+	    "sw	s2, 64(sp)\n\t"
+	    "sw	s3, 68(sp)\n\t"
+	    "sw	s4, 72(sp)\n\t"
+	    "sw	s5, 76(sp)\n\t"
+	    "sw	s6, 80(sp)\n\t"
+	    "sw	s7, 84(sp)\n\t"
+	    "sw	s8, 88(sp)\n\t"
+	    "sw	s9, 92(sp)\n\t"
+	    "sw	s10, 96(sp)\n\t"
+	    "sw	s11, 100(sp)\n\t"
+	    "sw	t3, 104(sp)\n\t"
+	    "sw	t4, 108(sp)\n\t"
+	    "sw	t5, 112(sp)\n\t"
+	    "sw	t6, 116(sp)\n\t");
+
+    /*
+        Put here your handling routine
+    */
+
+    // Restore values and close stack pointer
+    asm("lw	ra, 0(sp)\n\t"
+        "lw	gp, 4(sp)\n\t"
+	    "lw	tp, 8(sp)\n\t"
+	    "lw	t0, 12(sp)\n\t"
+	    "lw	t1, 16(sp)\n\t"
+	    "lw	t2, 20(sp)\n\t"
+	    "lw	s0, 24(sp)\n\t"
+	    "lw	s1, 28(sp)\n\t"
+	    "lw	a0, 32(sp)\n\t"
+	    "lw	a1, 36(sp)\n\t"
+	    "lw	a2, 40(sp)\n\t"
+	    "lw	a3, 44(sp)\n\t"
+	    "lw	a4, 48(sp)\n\t"
+	    "lw	a5, 52(sp)\n\t"
+	    "lw	a6, 56(sp)\n\t"
+	    "lw	a7, 60(sp)\n\t"
+	    "lw	s2, 64(sp)\n\t"
+	    "lw	s3, 68(sp)\n\t"
+	    "lw	s4, 72(sp)\n\t"
+	    "lw	s5, 76(sp)\n\t"
+	    "lw	s6, 80(sp)\n\t"
+	    "lw	s7, 84(sp)\n\t"
+	    "lw	s8, 88(sp)\n\t"
+	    "lw	s9, 92(sp)\n\t"
+	    "lw	s10, 96(sp)\n\t"
+	    "lw	s11, 100(sp)\n\t"
+	    "lw	t3, 104(sp)\n\t"
+	    "lw	t4, 108(sp)\n\t"
+	    "lw	t5, 112(sp)\n\t"
+	    "lw	t6, 116(sp)\n\t"
+        "add sp, sp, 128\n\t");
+
+    asm("mret");
 }
 
 /*

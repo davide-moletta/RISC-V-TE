@@ -3,10 +3,6 @@
 
 #define SLIPTERM_VERSION "0.01"
 
-// GENERAL NOTEs/TODO:
-//   1) Should we use ctrl+] like IDF?
-//   2) Actually test.
-
 #include <errno.h>
 #include <fcntl.h>
 #include <pcap.h>

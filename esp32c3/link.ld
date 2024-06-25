@@ -11,6 +11,8 @@ SECTIONS {
   .intr_vector_table :{ KEEP(*(.intr_vector_table)) }  > iram
 
   .intr_service_routines :{ KEEP(*(.intr_service_routines)) }  > iram
+
+  .machine_setup :{ KEEP(*(.machine_setup)) } > iram
   
   .text :{ *(.text) *(.text*) } > iram
 

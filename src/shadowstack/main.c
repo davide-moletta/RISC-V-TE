@@ -2,6 +2,7 @@
 #include <intr_vector_table.h>
 #include <usercode/user_entry.h>
 
+int main(void) __attribute__((section(".machine_setup")));
 /*
     JTAG 
     black: ground
@@ -24,19 +25,26 @@ int main(void)
     asm("csrw mtvec, t0");                // Load the address in MTVEC
 
     /*
-        MSTATUS REGISTER (bits: [position])
+        MSTATUS CSR Shown as 
 
-        SD:     [31]                    VS:     [10:9]
-        WPRI:   [30:23]                 SPP:    [8]
-        TSR:    [22]                    MPIE:   [7]
-        TW:     [21]                    UBE:    [6]
-        TVM:    [20]                    SPIE:   [5]
-        MXR:    [19]                    WPRI:   [4]
-        SUM:    [18]                    MIE:    [3]
-        MPRV    [17]                    WPRI:   [2]
-        XS:     [16:15]                 SIE:    [1]
-        FS:     [14:13]                 WPRI:   [0]
-        MPP:    [12:11]
+        bit(s) position
+        ---------------
+        | bit(s) name |
+        ---------------
+        bit(s) length
+
+
+          31 30    23  22   21    20    19   18     17  16      15 14     13 12       11
+        --------------------------------------------------------------------------------
+        | SD | WPRI | TSR | TW | TVM | MXR | SUM | MPRV | XS[1:0] | FS[1:0] | MPP[1:0] |
+        --------------------------------------------------------------------------------
+           1     8     1     1    1     1     1     1        2         2          2     
+        
+        10     9  8     7      6      5      4      3      2     1     0  
+        -------------------------------------------------------------------
+        | WPRI | SPP | MPIE | WPRI | SPIE | UPIE | MIE | WPRI | SIE | UIE |
+        -------------------------------------------------------------------
+           2      1      1     1      1      1      1     1      1     1       
     */
 
     printf("Configuring mstatus register ...\n");
