@@ -14,8 +14,6 @@ void user_code()
     asm("ecall");
 
     printf("CODE after ecall\n");
-
-    asm("ret");
 }
 
 int sum(int a, int b) 
@@ -23,3 +21,8 @@ int sum(int a, int b)
     int c = a + b;
     return c;
 }
+
+    // unsigned long ret;
+    // asm volatile ("add %0, ra, x0" : "=r" (ret));
+
+	// printf("ret: %ld\n", ret);

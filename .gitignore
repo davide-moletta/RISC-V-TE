@@ -4,3 +4,4 @@ dump.asm
 openocd/*
 TODO
 .vscode/*
+.gdbinit
