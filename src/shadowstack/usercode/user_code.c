@@ -3,6 +3,12 @@
 void user_code()      __attribute__((section(".user_code")));
 int sum(int a, int b) __attribute__((section(".user_code")));
 
+int sum(int a, int b) 
+{
+    int c = a + b;
+    return c;
+}
+
 void user_code()
 {
     int a = 10;
@@ -11,18 +17,13 @@ void user_code()
     int c = sum(a, b);
     printf("Result is %d\n", c);
 
+    // Make the ecall
     asm("ecall");
 
-    printf("CODE after ecall\n");
+    asm("j user_mode_exit_point");
 }
 
-int sum(int a, int b) 
-{
-    int c = a + b;
-    return c;
-}
+    // ret = 0;
+    // asm volatile("lw %0, 12(sp)" : "=r"(ret));
 
-    // unsigned long ret;
-    // asm volatile ("add %0, ra, x0" : "=r" (ret));
-
-	// printf("ret: %ld\n", ret);
+    // printf("ret in user code after: %08lx\n", ret);

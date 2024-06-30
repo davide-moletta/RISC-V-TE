@@ -1,9 +1,10 @@
 #include <stdio.h>
 
+// Interrupt vector table with all the calls to interrupt service routines
 void interrupt_vector_table(void)        __attribute__((section(".intr_vector_table")));
 
+// Interrupt Service Routines to handle interrupts
 void synchronous_exception_handler(void) __attribute__((section(".intr_service_routines")));
-void ecall_handler(void)                 __attribute__((section(".intr_service_routines")));
 void isr_user_software(void)             __attribute__((section(".intr_service_routines")));
 void isr_supervisor_software(void)       __attribute__((section(".intr_service_routines")));
 void isr_reserved(void)                  __attribute__((section(".intr_service_routines")));
@@ -15,8 +16,25 @@ void isr_user_external(void)             __attribute__((section(".intr_service_r
 void isr_supervisor_external(void)       __attribute__((section(".intr_service_routines")));
 void isr_machine_external(void)          __attribute__((section(".intr_service_routines")));
 
+// Exception Service Routines to handle exceptions
+void esr_handler_instr_addr_mis(void)    __attribute__((section(".intr_service_routines")));
+void esr_handler_instr_acc_fault(void)   __attribute__((section(".intr_service_routines")));
+void esr_handler_illegal_instr(void)     __attribute__((section(".intr_service_routines")));
+void esr_handler_breakpoint(void)        __attribute__((section(".intr_service_routines")));
+void esr_handler_load_addr_mis(void)     __attribute__((section(".intr_service_routines")));
+void esr_handler_load_acc_fault(void)    __attribute__((section(".intr_service_routines")));
+void esr_handler_AMO_addr_mis(void)      __attribute__((section(".intr_service_routines")));
+void esr_handler_AMO_acc_fault(void)     __attribute__((section(".intr_service_routines")));
+void esr_handler_U_mode_ecall(void)      __attribute__((section(".intr_service_routines")));
+void esr_handler_S_mode_ecall(void)      __attribute__((section(".intr_service_routines")));
+void esr_handler_M_mode_ecall(void)      __attribute__((section(".intr_service_routines")));
+void esr_handler_instr_page_fault(void)  __attribute__((section(".intr_service_routines")));
+void esr_handler_load_page_fault(void)   __attribute__((section(".intr_service_routines")));
+void esr_handler_AMO_page_fault(void)    __attribute__((section(".intr_service_routines")));
+void esr_handler_reserved(void)          __attribute__((section(".intr_service_routines")));
+
 /*
-Interrupt | Exception Code | Description
+Interrupt | exception Code | Description
 1         | 0              | User software interrupt
 1         | 1              | Supervisor software interrupt
 1         | 2              | Reserved
@@ -69,38 +87,6 @@ void interrupt_vector_table(void)
 
 void synchronous_exception_handler(void)
 {
-    // Save registers and state
-    // asm("add sp, sp, -116");
-    // asm("sw ra, 0(sp)");
-    // asm("sw tp, 4(sp)");
-    // asm("sw t0, 8(sp)");
-    // asm("sw t1, 12(sp)");
-    // asm("sw t2, 16(sp)");
-    // asm("sw s0, 20(sp)");
-    // asm("sw s1, 24(sp)");
-    // asm("sw a0, 28(sp)");
-    // asm("sw a1, 32(sp)");
-    // asm("sw a2, 36(sp)");
-    // asm("sw a3, 40(sp)");
-    // asm("sw a4, 44(sp)");
-    // asm("sw a5, 48(sp)");
-    // asm("sw a6, 52(sp)");
-    // asm("sw a7, 56(sp)");
-    // asm("sw s2, 60(sp)");
-    // asm("sw s3, 64(sp)");
-    // asm("sw s4, 68(sp)");
-    // asm("sw s5, 72(sp)");
-    // asm("sw s6, 76(sp)");
-    // asm("sw s7, 80(sp)");
-    // asm("sw s8, 84(sp)");
-    // asm("sw s9, 88(sp)");
-    // asm("sw s10, 92(sp)");
-    // asm("sw s11, 96(sp)");
-    // asm("sw t3, 100(sp)");
-    // asm("sw t4, 104(sp)");
-    // asm("sw t5, 108(sp)");
-    // asm("sw t6, 112(sp)");
-
     /*
         MCAUSE CSR Shown as
 
@@ -113,104 +99,170 @@ void synchronous_exception_handler(void)
 
         31          30               0
         ------------------------------
-        | Interrupt | Exception Code |
+        | Interrupt | exception Code |
         ------------------------------
              1             31
 
         Interrupt is a single bit set to 1 for interrupts and to 0 for exceptions
-        Exception code contains the code of what triggered the exception/interrupt
+        exception code contains the code of what triggered the exception/interrupt
     */
 
-    // Check the cause of the exception
+    // Load mcause to inspect the cause of the trap
     unsigned long mcause;
     asm volatile("csrr %0, mcause" : "=r"(mcause));
 
     // Check the MSB (bit 31) of the mcause register
-    if (mcause & 0x80000000) { isr_user_software(); } // If it is set call the user software interrupt
-
-    // Check if it's an environment call from U-mode
-    if ((mcause & 0xFF) == 8)
+    if (mcause & 0x80000000)
     {
-        unsigned long a0;
-        asm volatile ("add %0, a0, x0" : "=r" (a0));
-
-        // if a0 contains 1 we terminate the execution
-        if(a0 == 1) 
+        isr_user_software(); // If it is set call the user software interrupt
+    }
+    else
+    {
+        // If not then it's an exception so check the cause
+        if ((mcause & 0xFF) == 0) // Check if it's an Instruction address misaligned
         {
-            asm("la t0, terminate_execution");
-            asm("csrw mepc, t0");
-            asm("mret");
+            esr_handler_instr_addr_mis();
         }
-        
-        ecall_handler(); // If it is call the environment call handler
-    } 
+        else if ((mcause & 0xFF) == 1) // Check if it's an Instruction access fault
+        {
+            esr_handler_instr_acc_fault();
+        }
+        else if ((mcause & 0xFF) == 2) // Check if it's an Illegal instruction
+        {
+            esr_handler_illegal_instr();
+        }
+        else if ((mcause & 0xFF) == 3) // Check if it's a Breakpoint
+        {
+            esr_handler_breakpoint();
+        }
+        else if ((mcause & 0xFF) == 4) // Check if it's a Load address misaligned
+        {
+            esr_handler_load_addr_mis();
+        }
+        else if ((mcause & 0xFF) == 5) // Check if it's a Load access fault
+        {
+            esr_handler_load_acc_fault();
+        }
+        else if ((mcause & 0xFF) == 6) // Check if it's a Store/AMO address misaligned
+        {
+            esr_handler_AMO_addr_mis();
+        }
+        else if ((mcause & 0xFF) == 7) // Check if it's a Store/AMO access fault
+        {
+            esr_handler_AMO_acc_fault();
+        }
+        else if ((mcause & 0xFF) == 8) // Check if it's an Environment call from U-mode
+        {
+            unsigned long a0;
+            asm volatile("add %0, a0, x0" : "=r"(a0));
 
-    /*
-        MANAGE OTHER CAUSES
-    */
+            // if a0 contains 1 we terminate the execution
+            if (a0 == 1)
+            {
+                asm("la t0, terminate_execution");
+                asm("csrw mepc, t0");
+                asm("mret");
+            }
+            esr_handler_U_mode_ecall();
+        }
+        else if ((mcause & 0xFF) == 9) // Check if it's an Environment call from S-mode
+        {
+            esr_handler_S_mode_ecall();
+        }
+        else if ((mcause & 0xFF) == 11) // Check if it's an Environment call from M-mode
+        {
+            esr_handler_M_mode_ecall();
+        }
+        else if ((mcause & 0xFF) == 12) // Check if it's an Instruction page fault
+        {
+            esr_handler_instr_page_fault();
+        }
+        else if ((mcause & 0xFF) == 13) // Check if it's a Load page fault
+        {
+            esr_handler_load_page_fault();
+        }
+        else if ((mcause & 0xFF) == 15) // Check if it's a Store/AMO page fault
+        {
+            esr_handler_AMO_page_fault();
+        }
+        else if (((mcause & 0xFF) == 10) || ((mcause & 0xFF) == 14) || ((mcause & 0xFF) >= 16)) // If it's 10, 14 or >= 16 it's reserved
+        {
+            esr_handler_reserved();
+        }
+    }
 
     // Adjust the mepc to point to the next instruction after ecall
-    asm("csrr t0, mepc\n\t"
-        "addi t0, t0, 4\n\t"
-        "csrw mepc, t0\n\t");
+    asm("csrr t0, mepc");
+    asm("addi t0, t0, 4");
+    asm("csrw mepc, t0");
 
-    // Restore registers and state
-    // asm("lw ra, 0(sp)");
-    // asm("lw tp, 4(sp)");
-    // asm("lw t0, 8(sp)");
-    // asm("lw t1, 12(sp)");
-    // asm("lw t2, 16(sp)");
-    // asm("lw s0, 20(sp)");
-    // asm("lw s1, 24(sp)");
-    // asm("lw a0, 28(sp)");
-    // asm("lw a1, 32(sp)");
-    // asm("lw a2, 36(sp)");
-    // asm("lw a3, 40(sp)");
-    // asm("lw a4, 44(sp)");
-    // asm("lw a5, 48(sp)");
-    // asm("lw a6, 52(sp)");
-    // asm("lw a7, 56(sp)");
-    // asm("lw s2, 60(sp)");
-    // asm("lw s3, 64(sp)");
-    // asm("lw s4, 68(sp)");
-    // asm("lw s5, 72(sp)");
-    // asm("lw s6, 76(sp)");
-    // asm("lw s7, 80(sp)");
-    // asm("lw s8, 84(sp)");
-    // asm("lw s9, 88(sp)");
-    // asm("lw s10, 92(sp)");
-    // asm("lw s11, 96(sp)");
-    // asm("lw t3, 100(sp)");
-    // asm("lw t4, 104(sp)");
-    // asm("lw t5, 108(sp)");
-    // asm("lw t6, 112(sp)");
-    // asm("add sp, sp, 116");
-
+    // Return to execution
     asm("mret");
 }
 
-void ecall_handler(void)
+void esr_handler_instr_addr_mis(void)
 {
-    // Save state
-    // asm("add sp, sp, -16\n\t"
-    //     "sw ra, 12(sp)\n\t"
-    //     "sw s0, 8(sp)\n\t"
-    // );
+    printf("Handling exception Instruction Address Misaligned \n");
+}
+void esr_handler_instr_acc_fault(void)
+{
+    printf("Handling exception Instruction Access Fault \n");
+}
+void esr_handler_illegal_instr(void)
+{
+    printf("Handling exception Illegal Instruction \n");
+}
+void esr_handler_breakpoint(void)
+{
+    printf("Handling exception Breakpoint \n");
+}
+void esr_handler_load_addr_mis(void)
+{
+    printf("Handling exception Load Address Misaligned \n");
+}
+void esr_handler_load_acc_fault(void)
+{
+    printf("Handling exception Load Access Fault \n");
+}
+void esr_handler_AMO_addr_mis(void)
+{
+    printf("Handling exception Store/AMO Address Misaligned \n");
+}
+void esr_handler_AMO_acc_fault(void)
+{
+    printf("Handling exception Store/AMO Access Fault \n");
+}
+void esr_handler_U_mode_ecall(void)
+{
+    printf("Handling exception U-mode Ecall \n");
 
-    printf("Handling ecall\n");
-
-    // /*
-    // 	HANDLE ECALL
-    // */
-
-    // // Restore state
-    // asm("lw ra, 12(sp)\n\t"
-    //     "lw s0, 8(sp)\n\t"
-    //     "add sp, sp, 16\n\t"
-    // );
-
-    // Return to synchronous_exception_handler to continue processing
-    // asm("ret");
+}
+void esr_handler_S_mode_ecall(void)
+{
+    printf("Handling exception S-mode Ecall \n");
+}
+void esr_handler_M_mode_ecall(void)
+{
+    printf("Handling exception M-mode Ecall \n");
+}
+void esr_handler_instr_page_fault(void)
+{
+    printf("Handling exception Intruction Page Fault \n");
+}
+void esr_handler_load_page_fault(void)
+{
+    printf("Handling exception Load Page Fault \n");
+}
+void esr_handler_AMO_page_fault(void)
+{
+    printf("Handling exception Store/AMO Page Fault \n");
+}
+/*
+    Should never be called since reserved
+*/
+void esr_handler_reserved(void)
+{
+    printf("\n\n Error: reserved exception code used \n\n");
 }
 
 void isr_user_software(void)
