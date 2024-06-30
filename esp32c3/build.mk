@@ -2,6 +2,24 @@ PROG        ?= firmware
 ARCH        ?= esp32c3
 RISC_V_TE   ?= $(realpath $(dir $(lastword $(MAKEFILE_LIST)))/..)
 ESPUTIL     ?= $(RISC_V_TE)/esputil/esputil
+
+# RISC-V extensions (to use below in -march=rv32...)
+# A | Atomic instructions
+# B | Bit manipulation
+# C | Compressed instructions
+# D | Double-precision floating-point
+# F | Single-precision floating-point
+# G | Shorthand for IMAFD extensions
+# H | Hypervisor extension
+# J | Dynamically translated languages
+# L | Decimal floating-point
+# M | Integer multiplication and division
+# N | User-level interrupts
+# P | Packed-SIMD instructions
+# Q | Quad-precision floating-point
+# S | Supervisor mode
+# T | Transactional memory
+# V | Vector operations
 CFLAGS      ?= -W -Wall -Wextra -Werror -Wundef -Wshadow -pedantic \
                -Wdouble-promotion -fno-common -Wconversion \
                -march=rv32imc -mabi=ilp32 \

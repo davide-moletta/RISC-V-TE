@@ -1,4 +1,4 @@
-ARCHITECTURES	= esp32c3 esp32
+ARCHITECTURES	= esp32c3
 EXAMPLES := $(dir $(wildcard */Makefile))
 
 all: build clean

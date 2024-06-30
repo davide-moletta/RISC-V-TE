@@ -3,16 +3,17 @@
 #include <usercode/user_entry.h>
 
 int main(void) __attribute__((section(".machine_setup")));
+void terminate_execution(void) __attribute__((section(".machine_setup")));
 /*
-    JTAG 
+    JTAG
     black: ground
     red: 5V
     green: 19
     white: 18
 */
 
-// run riscv32-esp-elf-gdb -x .gdbinit src/shadowstack/firmware.elf 
-// after openocd -f openocd/esp32c3-builtin.cfg 
+// openocd -f openocd/esp32c3-builtin.cfg
+// riscv32-esp-elf-gdb -x .gdbinit src/shadowstack/firmware.elf
 
 int main(void)
 {
@@ -25,7 +26,7 @@ int main(void)
     asm("csrw mtvec, t0");                // Load the address in MTVEC
 
     /*
-        MSTATUS CSR Shown as 
+        MSTATUS CSR Shown as
 
         bit(s) position
         ---------------
@@ -38,13 +39,13 @@ int main(void)
         --------------------------------------------------------------------------------
         | SD | WPRI | TSR | TW | TVM | MXR | SUM | MPRV | XS[1:0] | FS[1:0] | MPP[1:0] |
         --------------------------------------------------------------------------------
-           1     8     1     1    1     1     1     1        2         2          2     
-        
-        10     9  8     7      6      5      4      3      2     1     0  
+           1     8     1     1    1     1     1     1        2         2          2
+
+        10     9  8     7      6      5      4      3      2     1     0
         -------------------------------------------------------------------
         | WPRI | SPP | MPIE | WPRI | SPIE | UPIE | MIE | WPRI | SIE | UIE |
         -------------------------------------------------------------------
-           2      1      1     1      1      1      1     1      1     1       
+           2      1      1     1      1      1      1     1      1     1
     */
 
     printf("Configuring mstatus register ...\n");
@@ -73,8 +74,12 @@ int main(void)
 
     asm("mret"); // Jump to user code in user mode
 
-    printf("Execution terminated, press Ctrl+C to close\n");
-
     while (1);
     return 0;
+}
+
+void terminate_execution(void)
+{
+    printf("Execution terminated, press Ctrl+C to close\n");
+    while (1);
 }
