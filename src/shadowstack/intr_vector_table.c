@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <shadow_stack.h>
 
 // Interrupt vector table with all the calls to interrupt service routines
 void interrupt_vector_table(void)        __attribute__((section(".intr_vector_table")));
@@ -32,6 +33,8 @@ void esr_handler_instr_page_fault(void)  __attribute__((section(".intr_service_r
 void esr_handler_load_page_fault(void)   __attribute__((section(".intr_service_routines")));
 void esr_handler_AMO_page_fault(void)    __attribute__((section(".intr_service_routines")));
 void esr_handler_reserved(void)          __attribute__((section(".intr_service_routines")));
+
+SStack shadow_stack = {.top = -1};
 
 /*
 Interrupt | exception Code | Description
@@ -232,9 +235,36 @@ void esr_handler_AMO_acc_fault(void)
 {
     printf("Handling exception Store/AMO Access Fault \n");
 }
+
+/*
+    CUSTOM ECALL CODES
+
+    Ecall code (a0) | a1 | a2 | Description
+            1       | -  | -  | Used to terminate the execution
+            2       | -  | -  | Used to check jump instruction
+            3       | -  | -  | Used to check return instruction
+
+    To check jump instruction:
+        - mepc
+        - jump destination
+        - CFG entry (if exists)
+
+        - If allowed store return address (jump instruction + 4) in shadow stack
+
+    To check return instruction:
+        - return address (ra)
+        - mepc
+        - shadow stack popped value
+
+        - If allowed do nothing since value already popped
+
+*/
 void esr_handler_U_mode_ecall(void)
 {
     printf("Handling exception U-mode Ecall \n");
+
+    // push(&stack, 10UL);
+    // pop(&stack);
 
 }
 void esr_handler_S_mode_ecall(void)
