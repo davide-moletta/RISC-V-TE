@@ -1,4 +1,4 @@
-SOURCES 	  = main.c intr_vector_table.c
+SOURCES 	  = main.c intr_vector_table.c shadow_stack.c
 EXTRA_SOURCES = usercode/user_code.c usercode/user_entry.c 
 RISC_V_TE 	  = /home/davide/RISC-V-TE
 ARCH 		  = esp32c3

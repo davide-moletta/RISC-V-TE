@@ -11,3 +11,6 @@ openocd
 
 # Ignore miscellaneous files
 TODO
+
+# Temporary
+stack_test.c

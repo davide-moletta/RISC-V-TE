@@ -1,5 +1,6 @@
 #include <stdio.h>
-#include <shadow_stack.h>
+#include "intr_vector_table.h"
+#include "shadow_stack.h"
 
 // Interrupt vector table with all the calls to interrupt service routines
 void interrupt_vector_table(void)        __attribute__((section(".intr_vector_table")));
@@ -203,6 +204,10 @@ void synchronous_exception_handler(void)
     asm("mret");
 }
 
+
+/*
+    Exception Service Routines functions
+*/
 void esr_handler_instr_addr_mis(void)
 {
     printf("Handling exception Instruction Address Misaligned \n");
@@ -294,6 +299,10 @@ void esr_handler_reserved(void)
 {
     printf("\n\n Error: reserved exception code used \n\n");
 }
+
+/*
+    Interrupt Service Routine functions
+*/
 
 void isr_user_software(void)
 {

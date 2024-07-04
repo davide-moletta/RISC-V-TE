@@ -24,7 +24,7 @@ int push(SStack *stack, unsigned long address)
     {
         return 0;
     }
-    stack->data[++stack->top] = address;
+    stack->addresses[++stack->top] = address;
     return 1;
 }
 
@@ -35,5 +35,5 @@ unsigned long pop(SStack *stack)
     {
         return 0;
     }
-    return stack->data[stack->top--];
+    return stack->addresses[stack->top--];
 }

@@ -1,6 +1,6 @@
 #include <mdk.h>
-#include <intr_vector_table.h>
-#include <usercode/user_entry.h>
+#include "intr_vector_table.h"
+#include "usercode/user_entry.h"
 
 int main(void)                 __attribute__((section(".machine_setup")));
 void terminate_execution(void) __attribute__((section(".machine_setup")));

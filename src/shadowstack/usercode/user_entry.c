@@ -1,5 +1,6 @@
 #include <stdio.h>
-#include <usercode/user_code.h>
+#include "user_entry.h"
+#include "user_code.h"
 
 void user_mode_entry_point() __attribute__((section(".user_code")));
 void user_mode_exit_point()  __attribute__((section(".user_code")));
