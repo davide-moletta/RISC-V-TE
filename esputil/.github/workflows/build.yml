@@ -6,7 +6,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - run: sudo apt-get install musl-tools
-    - run: make PROG=esputil_linux CC=musl-gcc CFLAGS="-static -s -Os"
+    - run: make PROG=esputil_linux CC=musl-gcc CFLAGS="-static -s -O1"
     - run: make esputil.exe
     - run: git fetch --prune --unshallow
     - run: git describe --abbrev=0 --tags > tag.txt

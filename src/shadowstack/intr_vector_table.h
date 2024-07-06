@@ -18,20 +18,20 @@ void isr_supervisor_external(void)       __attribute__((section(".intr_service_r
 void isr_machine_external(void)          __attribute__((section(".intr_service_routines")));
 
 // Exception Service Routines to handle exceptions
-void esr_handler_instr_addr_mis(void)    __attribute__((section(".intr_service_routines")));
-void esr_handler_instr_acc_fault(void)   __attribute__((section(".intr_service_routines")));
-void esr_handler_illegal_instr(void)     __attribute__((section(".intr_service_routines")));
-void esr_handler_breakpoint(void)        __attribute__((section(".intr_service_routines")));
-void esr_handler_load_addr_mis(void)     __attribute__((section(".intr_service_routines")));
-void esr_handler_load_acc_fault(void)    __attribute__((section(".intr_service_routines")));
-void esr_handler_AMO_addr_mis(void)      __attribute__((section(".intr_service_routines")));
-void esr_handler_AMO_acc_fault(void)     __attribute__((section(".intr_service_routines")));
-void esr_handler_U_mode_ecall(void)      __attribute__((section(".intr_service_routines")));
-void esr_handler_S_mode_ecall(void)      __attribute__((section(".intr_service_routines")));
-void esr_handler_M_mode_ecall(void)      __attribute__((section(".intr_service_routines")));
-void esr_handler_instr_page_fault(void)  __attribute__((section(".intr_service_routines")));
-void esr_handler_load_page_fault(void)   __attribute__((section(".intr_service_routines")));
-void esr_handler_AMO_page_fault(void)    __attribute__((section(".intr_service_routines")));
-void esr_handler_reserved(void)          __attribute__((section(".intr_service_routines")));
+void esr_handler_instr_addr_mis(void)                                              __attribute__((section(".intr_service_routines")));
+void esr_handler_instr_acc_fault(void)                                             __attribute__((section(".intr_service_routines")));
+void esr_handler_illegal_instr(void)                                               __attribute__((section(".intr_service_routines")));
+void esr_handler_breakpoint(void)                                                  __attribute__((section(".intr_service_routines")));
+void esr_handler_load_addr_mis(void)                                               __attribute__((section(".intr_service_routines")));
+void esr_handler_load_acc_fault(void)                                              __attribute__((section(".intr_service_routines")));
+void esr_handler_AMO_addr_mis(void)                                                __attribute__((section(".intr_service_routines")));
+void esr_handler_AMO_acc_fault(void)                                               __attribute__((section(".intr_service_routines")));
+void esr_handler_U_mode_ecall(unsigned long ecall_code, unsigned long dst_address) __attribute__((section(".intr_service_routines")));
+void esr_handler_S_mode_ecall(void)                                                __attribute__((section(".intr_service_routines")));
+void esr_handler_M_mode_ecall(void)                                                __attribute__((section(".intr_service_routines")));
+void esr_handler_instr_page_fault(void)                                            __attribute__((section(".intr_service_routines")));
+void esr_handler_load_page_fault(void)                                             __attribute__((section(".intr_service_routines")));
+void esr_handler_AMO_page_fault(void)                                              __attribute__((section(".intr_service_routines")));
+void esr_handler_reserved(void)                                                    __attribute__((section(".intr_service_routines")));
 
 #endif

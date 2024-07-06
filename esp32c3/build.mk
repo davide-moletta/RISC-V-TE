@@ -24,7 +24,7 @@ ESPUTIL     ?= $(RISC_V_TE)/esputil/esputil
 CFLAGS      ?= -W -Wall -Wextra -Werror -Wundef -Wshadow -pedantic \
                -Wdouble-promotion -fno-common -Wconversion \
                -march=rv32imc -mabi=ilp32 \
-               -Os -ffunction-sections -fdata-sections -fno-builtin-printf \
+               -O1 -ffunction-sections -fdata-sections -fno-builtin-printf \
                -I. -I$(RISC_V_TE)/$(ARCH) $(EXTRA_CFLAGS)
 LINKFLAGS   ?= -T$(RISC_V_TE)/$(ARCH)/link.ld -nostdlib -nostartfiles -Wl,--gc-sections $(EXTRA_LINKFLAGS)
 CWD         ?= $(realpath $(CURDIR))

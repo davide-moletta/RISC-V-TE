@@ -5,7 +5,7 @@ ESPUTIL     ?= $(MDK)/esputil/esputil
 CFLAGS      ?= -W -Wall -Wextra -Werror -Wundef -Wshadow -pedantic \
                -Wdouble-promotion -fno-common -Wconversion \
                -mlongcalls -mtext-section-literals \
-               -Os -ffunction-sections -fdata-sections -fno-builtin-printf \
+               -O1 -ffunction-sections -fdata-sections -fno-builtin-printf \
                -I. -I$(MDK)/$(ARCH) $(EXTRA_CFLAGS)
 LINKFLAGS   ?= -T$(MDK)/$(ARCH)/link.ld -nostdlib -nostartfiles -Wl,--gc-sections $(EXTRA_LINKFLAGS)
 CWD         ?= $(realpath $(CURDIR))

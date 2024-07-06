@@ -19,21 +19,21 @@ void isr_supervisor_external(void)       __attribute__((section(".intr_service_r
 void isr_machine_external(void)          __attribute__((section(".intr_service_routines")));
 
 // Exception Service Routines to handle exceptions
-void esr_handler_instr_addr_mis(void)    __attribute__((section(".intr_service_routines")));
-void esr_handler_instr_acc_fault(void)   __attribute__((section(".intr_service_routines")));
-void esr_handler_illegal_instr(void)     __attribute__((section(".intr_service_routines")));
-void esr_handler_breakpoint(void)        __attribute__((section(".intr_service_routines")));
-void esr_handler_load_addr_mis(void)     __attribute__((section(".intr_service_routines")));
-void esr_handler_load_acc_fault(void)    __attribute__((section(".intr_service_routines")));
-void esr_handler_AMO_addr_mis(void)      __attribute__((section(".intr_service_routines")));
-void esr_handler_AMO_acc_fault(void)     __attribute__((section(".intr_service_routines")));
-void esr_handler_U_mode_ecall(void)      __attribute__((section(".intr_service_routines")));
-void esr_handler_S_mode_ecall(void)      __attribute__((section(".intr_service_routines")));
-void esr_handler_M_mode_ecall(void)      __attribute__((section(".intr_service_routines")));
-void esr_handler_instr_page_fault(void)  __attribute__((section(".intr_service_routines")));
-void esr_handler_load_page_fault(void)   __attribute__((section(".intr_service_routines")));
-void esr_handler_AMO_page_fault(void)    __attribute__((section(".intr_service_routines")));
-void esr_handler_reserved(void)          __attribute__((section(".intr_service_routines")));
+void esr_handler_instr_addr_mis(void)                                              __attribute__((section(".intr_service_routines")));
+void esr_handler_instr_acc_fault(void)                                             __attribute__((section(".intr_service_routines")));
+void esr_handler_illegal_instr(void)                                               __attribute__((section(".intr_service_routines")));
+void esr_handler_breakpoint(void)                                                  __attribute__((section(".intr_service_routines")));
+void esr_handler_load_addr_mis(void)                                               __attribute__((section(".intr_service_routines")));
+void esr_handler_load_acc_fault(void)                                              __attribute__((section(".intr_service_routines")));
+void esr_handler_AMO_addr_mis(void)                                                __attribute__((section(".intr_service_routines")));
+void esr_handler_AMO_acc_fault(void)                                               __attribute__((section(".intr_service_routines")));
+void esr_handler_U_mode_ecall(unsigned long ecall_code, unsigned long dst_address) __attribute__((section(".intr_service_routines")));
+void esr_handler_S_mode_ecall(void)                                                __attribute__((section(".intr_service_routines")));
+void esr_handler_M_mode_ecall(void)                                                __attribute__((section(".intr_service_routines")));
+void esr_handler_instr_page_fault(void)                                            __attribute__((section(".intr_service_routines")));
+void esr_handler_load_page_fault(void)                                             __attribute__((section(".intr_service_routines")));
+void esr_handler_AMO_page_fault(void)                                              __attribute__((section(".intr_service_routines")));
+void esr_handler_reserved(void)                                                    __attribute__((section(".intr_service_routines")));
 
 SStack shadow_stack = {.top = -1};
 
@@ -112,87 +112,76 @@ void synchronous_exception_handler(void)
     */
 
     // Load mcause to inspect the cause of the trap
-    unsigned long mcause;
+    unsigned long mcause, a0, a1;
     asm volatile("csrr %0, mcause" : "=r"(mcause));
+    asm volatile("add %0, a0, x0" : "=r"(a0));
+    asm volatile("add %0, a1, x0" : "=r"(a1));
 
     // Check the MSB (bit 31) of the mcause register
     if (mcause & 0x80000000)
     {
         isr_user_software(); // If it is set call the user software interrupt
     }
-    else
+    // If not then it's an exception so check the cause
+    if ((mcause & 0xFF) == 0) // Check if it's an Instruction address misaligned
     {
-        // If not then it's an exception so check the cause
-        if ((mcause & 0xFF) == 0) // Check if it's an Instruction address misaligned
-        {
-            esr_handler_instr_addr_mis();
-        }
-        else if ((mcause & 0xFF) == 1) // Check if it's an Instruction access fault
-        {
-            esr_handler_instr_acc_fault();
-        }
-        else if ((mcause & 0xFF) == 2) // Check if it's an Illegal instruction
-        {
-            esr_handler_illegal_instr();
-        }
-        else if ((mcause & 0xFF) == 3) // Check if it's a Breakpoint
-        {
-            esr_handler_breakpoint();
-        }
-        else if ((mcause & 0xFF) == 4) // Check if it's a Load address misaligned
-        {
-            esr_handler_load_addr_mis();
-        }
-        else if ((mcause & 0xFF) == 5) // Check if it's a Load access fault
-        {
-            esr_handler_load_acc_fault();
-        }
-        else if ((mcause & 0xFF) == 6) // Check if it's a Store/AMO address misaligned
-        {
-            esr_handler_AMO_addr_mis();
-        }
-        else if ((mcause & 0xFF) == 7) // Check if it's a Store/AMO access fault
-        {
-            esr_handler_AMO_acc_fault();
-        }
-        else if ((mcause & 0xFF) == 8) // Check if it's an Environment call from U-mode
-        {
-            unsigned long a0;
-            asm volatile("add %0, a0, x0" : "=r"(a0));
-
-            // if a0 contains 1 we terminate the execution
-            if (a0 == 1)
-            {
-                asm("la t0, terminate_execution");
-                asm("csrw mepc, t0");
-                asm("mret");
-            }
-            esr_handler_U_mode_ecall();
-        }
-        else if ((mcause & 0xFF) == 9) // Check if it's an Environment call from S-mode
-        {
-            esr_handler_S_mode_ecall();
-        }
-        else if ((mcause & 0xFF) == 11) // Check if it's an Environment call from M-mode
-        {
-            esr_handler_M_mode_ecall();
-        }
-        else if ((mcause & 0xFF) == 12) // Check if it's an Instruction page fault
-        {
-            esr_handler_instr_page_fault();
-        }
-        else if ((mcause & 0xFF) == 13) // Check if it's a Load page fault
-        {
-            esr_handler_load_page_fault();
-        }
-        else if ((mcause & 0xFF) == 15) // Check if it's a Store/AMO page fault
-        {
-            esr_handler_AMO_page_fault();
-        }
-        else if (((mcause & 0xFF) == 10) || ((mcause & 0xFF) == 14) || ((mcause & 0xFF) >= 16)) // If it's 10, 14 or >= 16 it's reserved
-        {
-            esr_handler_reserved();
-        }
+        esr_handler_instr_addr_mis();
+    }
+    else if ((mcause & 0xFF) == 1) // Check if it's an Instruction access fault
+    {
+        esr_handler_instr_acc_fault();
+    }
+    else if ((mcause & 0xFF) == 2) // Check if it's an Illegal instruction
+    {
+        esr_handler_illegal_instr();
+    }
+    else if ((mcause & 0xFF) == 3) // Check if it's a Breakpoint
+    {
+        esr_handler_breakpoint();
+    }
+    else if ((mcause & 0xFF) == 4) // Check if it's a Load address misaligned
+    {
+        esr_handler_load_addr_mis();
+    }
+    else if ((mcause & 0xFF) == 5) // Check if it's a Load access fault
+    {
+        esr_handler_load_acc_fault();
+    }
+    else if ((mcause & 0xFF) == 6) // Check if it's a Store/AMO address misaligned
+    {
+        esr_handler_AMO_addr_mis();
+    }
+    else if ((mcause & 0xFF) == 7) // Check if it's a Store/AMO access fault
+    {
+        esr_handler_AMO_acc_fault();
+    }
+    else if ((mcause & 0xFF) == 8) // Check if it's an Environment call from U-mode
+    {
+        esr_handler_U_mode_ecall(a0, a1);
+    }
+    else if ((mcause & 0xFF) == 9) // Check if it's an Environment call from S-mode
+    {
+        esr_handler_S_mode_ecall();
+    }
+    else if ((mcause & 0xFF) == 11) // Check if it's an Environment call from M-mode
+    {
+        esr_handler_M_mode_ecall();
+    }
+    else if ((mcause & 0xFF) == 12) // Check if it's an Instruction page fault
+    {
+        esr_handler_instr_page_fault();
+    }
+    else if ((mcause & 0xFF) == 13) // Check if it's a Load page fault
+    {
+        esr_handler_load_page_fault();
+    }
+    else if ((mcause & 0xFF) == 15) // Check if it's a Store/AMO page fault
+    {
+        esr_handler_AMO_page_fault();
+    }
+    else if (((mcause & 0xFF) == 10) || ((mcause & 0xFF) == 14) || ((mcause & 0xFF) >= 16)) // If it's 10, 14 or >= 16 it's reserved
+    {
+        esr_handler_reserved();
     }
 
     // Adjust the mepc to point to the next instruction after ecall
@@ -264,10 +253,32 @@ void esr_handler_AMO_acc_fault(void)
         - If allowed do nothing since value already popped
 
 */
-void esr_handler_U_mode_ecall(void)
+void esr_handler_U_mode_ecall(unsigned long ecall_code, unsigned long dst_address)
 {
-    printf("Handling exception U-mode Ecall \n");
+    // if a0 contains 1 we terminate the execution
+    if (ecall_code == 1)
+    {
+        printf("Terminating execution ...\n");
+        asm("la t0, terminate_execution");
+        asm("csrw mepc, t0");
+        asm("mret");
+    } else if (ecall_code == 2)
+    {
+        printf("Jump check requested for %8lx ...\n", dst_address);
+        /*
+            CFI CHECK
+        */
 
+
+    } else if (ecall_code == 3)
+    {
+        printf("Return check requested for %8lx ...\n", dst_address);
+
+        /*
+            SHADOW STACK CHECK
+        */
+
+    }
     // push(&stack, 10UL);
     // pop(&stack);
 
