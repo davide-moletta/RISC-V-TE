@@ -19,23 +19,23 @@ void isr_supervisor_external(void)       __attribute__((section(".intr_service_r
 void isr_machine_external(void)          __attribute__((section(".intr_service_routines")));
 
 // Exception Service Routines to handle exceptions
-void esr_handler_instr_addr_mis(void)                                              __attribute__((section(".intr_service_routines")));
-void esr_handler_instr_acc_fault(void)                                             __attribute__((section(".intr_service_routines")));
-void esr_handler_illegal_instr(void)                                               __attribute__((section(".intr_service_routines")));
-void esr_handler_breakpoint(void)                                                  __attribute__((section(".intr_service_routines")));
-void esr_handler_load_addr_mis(void)                                               __attribute__((section(".intr_service_routines")));
-void esr_handler_load_acc_fault(void)                                              __attribute__((section(".intr_service_routines")));
-void esr_handler_AMO_addr_mis(void)                                                __attribute__((section(".intr_service_routines")));
-void esr_handler_AMO_acc_fault(void)                                               __attribute__((section(".intr_service_routines")));
-void esr_handler_U_mode_ecall(unsigned long ecall_code, unsigned long dst_address) __attribute__((section(".intr_service_routines")));
-void esr_handler_S_mode_ecall(void)                                                __attribute__((section(".intr_service_routines")));
-void esr_handler_M_mode_ecall(void)                                                __attribute__((section(".intr_service_routines")));
-void esr_handler_instr_page_fault(void)                                            __attribute__((section(".intr_service_routines")));
-void esr_handler_load_page_fault(void)                                             __attribute__((section(".intr_service_routines")));
-void esr_handler_AMO_page_fault(void)                                              __attribute__((section(".intr_service_routines")));
-void esr_handler_reserved(void)                                                    __attribute__((section(".intr_service_routines")));
+void esr_handler_instr_addr_mis(void)                                                                  __attribute__((section(".intr_service_routines")));
+void esr_handler_instr_acc_fault(void)                                                                 __attribute__((section(".intr_service_routines")));
+void esr_handler_illegal_instr(void)                                                                   __attribute__((section(".intr_service_routines")));
+void esr_handler_breakpoint(void)                                                                      __attribute__((section(".intr_service_routines")));
+void esr_handler_load_addr_mis(void)                                                                   __attribute__((section(".intr_service_routines")));
+void esr_handler_load_acc_fault(void)                                                                  __attribute__((section(".intr_service_routines")));
+void esr_handler_AMO_addr_mis(void)                                                                    __attribute__((section(".intr_service_routines")));
+void esr_handler_AMO_acc_fault(void)                                                                   __attribute__((section(".intr_service_routines")));
+void esr_handler_U_mode_ecall(unsigned long ecall_code, unsigned long dst_address, unsigned long mepc) __attribute__((section(".intr_service_routines")));
+void esr_handler_S_mode_ecall(void)                                                                    __attribute__((section(".intr_service_routines")));
+void esr_handler_M_mode_ecall(void)                                                                    __attribute__((section(".intr_service_routines")));
+void esr_handler_instr_page_fault(void)                                                                __attribute__((section(".intr_service_routines")));
+void esr_handler_load_page_fault(void)                                                                 __attribute__((section(".intr_service_routines")));
+void esr_handler_AMO_page_fault(void)                                                                  __attribute__((section(".intr_service_routines")));
+void esr_handler_reserved(void)                                                                        __attribute__((section(".intr_service_routines")));
 
-SStack shadow_stack = {.top = -1};
+__attribute__((section(".shadow_stack"))) SStack shadow_stack = {.top = -1};
 
 /*
 Interrupt | exception Code | Description
@@ -101,7 +101,7 @@ void synchronous_exception_handler(void)
         bit(s) length
 
 
-        31          30               0
+        XLEN-1      30               0
         ------------------------------
         | Interrupt | exception Code |
         ------------------------------
@@ -111,11 +111,17 @@ void synchronous_exception_handler(void)
         exception code contains the code of what triggered the exception/interrupt
     */
 
-    // Load mcause to inspect the cause of the trap
     unsigned long mcause, a0, a1;
-    asm volatile("csrr %0, mcause" : "=r"(mcause));
-    asm volatile("add %0, a0, x0" : "=r"(a0));
-    asm volatile("add %0, a1, x0" : "=r"(a1));
+    unsigned long mepc = 0;
+    asm volatile("csrr %0, mcause" : "=r"(mcause)); // Load mcause to inspect the cause of the trap
+    asm volatile("add %0, a0, x0" : "=r"(a0));      // Load a0 which contains the ecall code
+    asm volatile("add %0, a1, x0" : "=r"(a1));      // Load a1 which contains the additional address
+
+    // Adjust the mepc to point to the next instruction after ecall
+    asm("csrr t0, mepc");
+    // asm volatile("add %0, t0, x0" : "=r"(mepc));     // Load mepc to retrieve the ecall adress
+    asm("addi t0, t0, 4");
+    asm("csrw mepc, t0");
 
     // Check the MSB (bit 31) of the mcause register
     if (mcause & 0x80000000)
@@ -157,7 +163,7 @@ void synchronous_exception_handler(void)
     }
     else if ((mcause & 0xFF) == 8) // Check if it's an Environment call from U-mode
     {
-        esr_handler_U_mode_ecall(a0, a1);
+        esr_handler_U_mode_ecall(a0, a1, mepc);
     }
     else if ((mcause & 0xFF) == 9) // Check if it's an Environment call from S-mode
     {
@@ -183,11 +189,6 @@ void synchronous_exception_handler(void)
     {
         esr_handler_reserved();
     }
-
-    // Adjust the mepc to point to the next instruction after ecall
-    asm("csrr t0, mepc");
-    asm("addi t0, t0, 4");
-    asm("csrw mepc, t0");
 
     // Return to execution
     asm("mret");
@@ -253,34 +254,39 @@ void esr_handler_AMO_acc_fault(void)
         - If allowed do nothing since value already popped
 
 */
-void esr_handler_U_mode_ecall(unsigned long ecall_code, unsigned long dst_address)
+void esr_handler_U_mode_ecall(unsigned long ecall_code, unsigned long dst_address, unsigned long mepc)
 {
     // if a0 contains 1 we terminate the execution
     if (ecall_code == 1)
     {
-        printf("Terminating execution ...\n");
+        printf("\t[ESR - U mode ecall]:\tTerminating execution ...\n");
         asm("la t0, terminate_execution");
         asm("csrw mepc, t0");
         asm("mret");
     } else if (ecall_code == 2)
     {
-        printf("Jump check requested for %8lx ...\n", dst_address);
+        printf("\t[ESR - U mode ecall]:\tJump check requested for %8lx ...\n", dst_address);
         /*
-            CFI CHECK
+            CFI CHECK with mepc + 4 and dst address
+            definire area di memoria per la stack
+            salvare base address stack
+            tengo indice per accedere alla posizione corretta
         */
 
+       /*
+            IF ALLOWED PUSH mepc + 8 TO STACK asm
+       */
+        push(&shadow_stack, mepc);
 
     } else if (ecall_code == 3)
     {
-        printf("Return check requested for %8lx ...\n", dst_address);
+        printf("\t[ESR - U mode ecall]:\tReturn check requested for %8lx ...\n", dst_address);
 
         /*
-            SHADOW STACK CHECK
+            SHADOW STACK CHECK with dst address and popped address
         */
-
+        // pop(&stack);
     }
-    // push(&stack, 10UL);
-    // pop(&stack);
 
 }
 void esr_handler_S_mode_ecall(void)

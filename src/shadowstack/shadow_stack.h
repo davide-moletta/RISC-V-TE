@@ -9,7 +9,7 @@ typedef struct
     int top;
 } SStack;
 
-int push(SStack* stack, unsigned long address) __attribute__((section(".shadow_stack")));
-unsigned long pop(SStack* stack)               __attribute__((section(".shadow_stack")));
+int push(SStack* stack, unsigned long address) __attribute__((section(".intr_service_routines")));
+unsigned long pop(SStack* stack)               __attribute__((section(".intr_service_routines")));
 
 #endif
