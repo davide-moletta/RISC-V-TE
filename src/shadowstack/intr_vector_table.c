@@ -3,7 +3,7 @@
 #include "shadow_stack.h"
 
 // Interrupt vector table with all the calls to interrupt service routines
-void interrupt_vector_table(void)        __attribute__((section(".intr_vector_table")));
+void interrupt_vector_table(void) __attribute__((section(".intr_vector_table")));
 
 // Interrupt Service Routines to handle interrupts
 void synchronous_exception_handler(void) __attribute__((section(".intr_service_routines")));
@@ -111,15 +111,14 @@ void synchronous_exception_handler(void)
         exception code contains the code of what triggered the exception/interrupt
     */
 
-    unsigned long mcause, a0, a1;
-    unsigned long mepc = 0;
+    unsigned long mcause, mepc, a0, a1;
     asm volatile("csrr %0, mcause" : "=r"(mcause)); // Load mcause to inspect the cause of the trap
+    asm volatile("csrr %0, mepc" : "=r"(mepc));     // Load mepc to retrieve the ecall adress
     asm volatile("add %0, a0, x0" : "=r"(a0));      // Load a0 which contains the ecall code
     asm volatile("add %0, a1, x0" : "=r"(a1));      // Load a1 which contains the additional address
 
     // Adjust the mepc to point to the next instruction after ecall
     asm("csrr t0, mepc");
-    // asm volatile("add %0, t0, x0" : "=r"(mepc));     // Load mepc to retrieve the ecall adress
     asm("addi t0, t0, 4");
     asm("csrw mepc, t0");
 
@@ -194,7 +193,6 @@ void synchronous_exception_handler(void)
     asm("mret");
 }
 
-
 /*
     Exception Service Routines functions
 */
@@ -263,31 +261,43 @@ void esr_handler_U_mode_ecall(unsigned long ecall_code, unsigned long dst_addres
         asm("la t0, terminate_execution");
         asm("csrw mepc, t0");
         asm("mret");
-    } else if (ecall_code == 2)
-    {
-        printf("\t[ESR - U mode ecall]:\tJump check requested for %8lx ...\n", dst_address);
-        /*
-            CFI CHECK with mepc + 4 and dst address
-            definire area di memoria per la stack
-            salvare base address stack
-            tengo indice per accedere alla posizione corretta
-        */
-
-       /*
-            IF ALLOWED PUSH mepc + 8 TO STACK asm
-       */
-        push(&shadow_stack, mepc);
-
-    } else if (ecall_code == 3)
-    {
-        printf("\t[ESR - U mode ecall]:\tReturn check requested for %8lx ...\n", dst_address);
-
-        /*
-            SHADOW STACK CHECK with dst address and popped address
-        */
-        // pop(&stack);
     }
+    else if (ecall_code == 2)
+    {
+        printf("\t[ESR - U mode ecall]:\tJump check requested for %8lx and mepc: %8lx\n", dst_address, mepc);
+        /*
+            CFI CHECK
+                mepc + 4 and destiantion address must be legal
 
+            IF ALLOWED PUSH mepc + 8 TO STACK
+        */
+        unsigned long address_to_store = mepc + 8;
+        if(push(&shadow_stack, address_to_store) != 1)
+        {  
+            printf("\t[ESR - U mode ecall]:\tStack is full not able to store address, terminating execution ...\n");
+            asm("la t0, terminate_execution");
+            asm("csrw mepc, t0");
+            asm("mret");
+        }
+        
+    }
+    else if (ecall_code == 3)
+    {
+        printf("\t[ESR - U mode ecall]:\tReturn check requested for %8lx ... and mepc: %8lx\n", dst_address, mepc);
+
+        /*
+            SHADOW STACK CHECK 
+                destination address and popped address must be equal
+        */
+        unsigned long stored_address = pop(&shadow_stack);
+        if (stored_address == 0 || stored_address != dst_address)
+        {
+            printf("\t[ESR - U mode ecall]:\tWrong return address, terminating execution ...\n");
+            asm("la t0, terminate_execution");
+            asm("csrw mepc, t0");
+            asm("mret");
+        }
+    }
 }
 void esr_handler_S_mode_ecall(void)
 {
