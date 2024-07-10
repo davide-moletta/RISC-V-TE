@@ -35,6 +35,7 @@ void user_code()
     printf("Summing %d and %d\n", first_num, second_num);
 
     // Since sum is not a leaf we need to store its return address
+    asm("li a2, 2");
     asm("la a1, sum"); // Load the destination address
     asm("li a0, 2");   // Load the code for the jump check
     asm("ecall");      // Perform ecall
