@@ -119,18 +119,12 @@ void synchronous_exception_handler(void)
     asm volatile("add %0, a0, x0" : "=r"(a0));      // Load a0 which contains the ecall code
     asm volatile("add %0, a1, x0" : "=r"(a1));      // Load a1 which contains the additional address
 
-    // Adjust the mepc to point to the next instruction after ecall
-    asm("csrr t0, mepc");
-    asm("addi t0, t0, 4");
-    asm("csrw mepc, t0");
-
     // Check the MSB (bit 31) of the mcause register
     if (mcause & 0x80000000)
     {
         isr_user_software(); // If it is set call the user software interrupt
-    }
-    // If not then it's an exception so check the cause
-    if ((mcause & 0xFF) == 0) // Check if it's an Instruction address misaligned
+    }   // If not then it's an exception so check the cause
+    else if ((mcause & 0xFF) == 0) // Check if it's an Instruction address misaligned
     {
         esr_handler_instr_addr_mis();
     }
@@ -186,10 +180,21 @@ void synchronous_exception_handler(void)
     {
         esr_handler_AMO_page_fault();
     }
-    else if (((mcause & 0xFF) == 10) || ((mcause & 0xFF) == 14) || ((mcause & 0xFF) >= 16)) // If it's 10, 14 or >= 16 it's reserved
+    else // If it's 10, 14 or >= 16 it's reserved
     {
         esr_handler_reserved();
     }
+
+    // Restore context
+    // NOTE: this is needed only because the compiler sees this as a normal function but we return with mret so the compiler never
+    // restores the context, this is not needed otherwise
+    asm("lw	ra,12(sp)");
+    asm("addi	sp,sp,16");
+
+    // Adjust the mepc to point to the next instruction after ecall
+    asm("csrr t0, mepc");
+    asm("addi t0, t0, 4");
+    asm("csrw mepc, t0");
 
     // Return to execution
     asm("mret");
@@ -281,7 +286,7 @@ void esr_handler_U_mode_ecall(unsigned long ecall_code, unsigned long dst_addres
     }
     else if (ecall_code == 3)
     {
-        printf("\t[ESR - U Mode Ecall]:\tReturn check requested for %8lx ... and mepc: %8lx\n", dst_address, mepc);
+        printf("\t[ESR - U Mode Ecall]:\tReturn check requested for %8lx and mepc: %8lx\n", dst_address, mepc);
 
         /*
             SHADOW STACK CHECK 
@@ -290,9 +295,12 @@ void esr_handler_U_mode_ecall(unsigned long ecall_code, unsigned long dst_addres
         unsigned long stored_address = pop(&shadow_stack);
         if (stored_address == 0 || stored_address != dst_address)
         {
-            printf("\t[ESR - U Mode Ecall]:\tWrong return address, terminating execution ...\n");
+            printf("\t[ESR - U Mode Ecall]:\tWrong return address or empty stack, terminating execution ...\n");
             code_termination();
         }
+    } else
+    {
+        printf("\t[ESR - U Mode Ecall]:\tUndefined Ecall code %8ld\n", ecall_code);
     }
 }
 void esr_handler_S_mode_ecall(void)
