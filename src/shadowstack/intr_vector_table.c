@@ -35,6 +35,8 @@ void esr_handler_load_page_fault(void)                                          
 void esr_handler_AMO_page_fault(void)                                                                  __attribute__((section(".intr_service_routines")));
 void esr_handler_reserved(void)                                                                        __attribute__((section(".intr_service_routines")));
 
+void code_termination(void) __attribute__((section(".intr_service_routines")));
+
 __attribute__((section(".shadow_stack"))) SStack shadow_stack = {.top = -1};
 
 /*
@@ -198,35 +200,35 @@ void synchronous_exception_handler(void)
 */
 void esr_handler_instr_addr_mis(void)
 {
-    printf("Handling exception Instruction Address Misaligned \n");
+    printf("\t[ESR - Instruction Address Misaligned]:\n");
 }
 void esr_handler_instr_acc_fault(void)
 {
-    printf("Handling exception Instruction Access Fault \n");
+    printf("\t[ESR - Instruction Access Fault]: \n");
 }
 void esr_handler_illegal_instr(void)
 {
-    printf("Handling exception Illegal Instruction \n");
+    printf("\t[ESR - Illegal Instruction]: \n");
 }
 void esr_handler_breakpoint(void)
 {
-    printf("Handling exception Breakpoint \n");
+    printf("\t[ESR - Breakpoint]: \n");
 }
 void esr_handler_load_addr_mis(void)
 {
-    printf("Handling exception Load Address Misaligned \n");
+    printf("\t[ESR - Load Address Misaligned]: \n");
 }
 void esr_handler_load_acc_fault(void)
 {
-    printf("Handling exception Load Access Fault \n");
+    printf("\t[ESR - Load Access Fault]: \n");
 }
 void esr_handler_AMO_addr_mis(void)
 {
-    printf("Handling exception Store/AMO Address Misaligned \n");
+    printf("\t[ESR - Store/AMO Address Misaligned]: \n");
 }
 void esr_handler_AMO_acc_fault(void)
 {
-    printf("Handling exception Store/AMO Access Fault \n");
+    printf("\t[ESR - Store/AMO Access Fault]: \n");
 }
 
 /*
@@ -257,14 +259,12 @@ void esr_handler_U_mode_ecall(unsigned long ecall_code, unsigned long dst_addres
     // if a0 contains 1 we terminate the execution
     if (ecall_code == 1)
     {
-        printf("\t[ESR - U mode ecall]:\tTerminating execution ...\n");
-        asm("la t0, terminate_execution");
-        asm("csrw mepc, t0");
-        asm("mret");
+        printf("\t[ESR - U Mode Ecall]:\tTerminating execution ...\n");
+        code_termination();
     }
     else if (ecall_code == 2)
     {
-        printf("\t[ESR - U mode ecall]:\tJump check requested for %8lx and mepc: %8lx\n", dst_address, mepc);
+        printf("\t[ESR - U Mode Ecall]:\tJump check requested for %8lx and mepc: %8lx\n", dst_address, mepc);
         /*
             CFI CHECK
                 mepc + 4 and destiantion address must be legal
@@ -274,16 +274,14 @@ void esr_handler_U_mode_ecall(unsigned long ecall_code, unsigned long dst_addres
         unsigned long address_to_store = mepc + 8;
         if(push(&shadow_stack, address_to_store) != 1)
         {  
-            printf("\t[ESR - U mode ecall]:\tStack is full not able to store address, terminating execution ...\n");
-            asm("la t0, terminate_execution");
-            asm("csrw mepc, t0");
-            asm("mret");
+            printf("\t[ESR - U Mode Ecall]:\tStack is full not able to store address, terminating execution ...\n");
+            code_termination();
         }
         
     }
     else if (ecall_code == 3)
     {
-        printf("\t[ESR - U mode ecall]:\tReturn check requested for %8lx ... and mepc: %8lx\n", dst_address, mepc);
+        printf("\t[ESR - U Mode Ecall]:\tReturn check requested for %8lx ... and mepc: %8lx\n", dst_address, mepc);
 
         /*
             SHADOW STACK CHECK 
@@ -292,39 +290,37 @@ void esr_handler_U_mode_ecall(unsigned long ecall_code, unsigned long dst_addres
         unsigned long stored_address = pop(&shadow_stack);
         if (stored_address == 0 || stored_address != dst_address)
         {
-            printf("\t[ESR - U mode ecall]:\tWrong return address, terminating execution ...\n");
-            asm("la t0, terminate_execution");
-            asm("csrw mepc, t0");
-            asm("mret");
+            printf("\t[ESR - U Mode Ecall]:\tWrong return address, terminating execution ...\n");
+            code_termination();
         }
     }
 }
 void esr_handler_S_mode_ecall(void)
 {
-    printf("Handling exception S-mode Ecall \n");
+    printf("\t[ESR - S Mode Ecall]: \n");
 }
 void esr_handler_M_mode_ecall(void)
 {
-    printf("Handling exception M-mode Ecall \n");
+    printf("\t[ESR - M Mode Ecall]: \n");
 }
 void esr_handler_instr_page_fault(void)
 {
-    printf("Handling exception Intruction Page Fault \n");
+    printf("\t[ESR - Intruction Page Fault]: \n");
 }
 void esr_handler_load_page_fault(void)
 {
-    printf("Handling exception Load Page Fault \n");
+    printf("\t[ESR - Load Page Fault]: \n");
 }
 void esr_handler_AMO_page_fault(void)
 {
-    printf("Handling exception Store/AMO Page Fault \n");
+    printf("\t[ESR - Store/AMO Page Fault]: \n");
 }
 /*
     Should never be called since reserved
 */
 void esr_handler_reserved(void)
 {
-    printf("\n\n Error: reserved exception code used \n\n");
+    printf("\t[ESR - Error Reserved]\n");
 }
 
 /*
@@ -333,39 +329,39 @@ void esr_handler_reserved(void)
 
 void isr_user_software(void)
 {
-    printf("User software interrupt generated");
+    printf("\t[ISR - User Software Interrupt]:\n");
 }
 void isr_supervisor_software(void)
 {
-    printf("Supervisor software interrupt generated");
+    printf("\t[ISR - Supervisor Software Interrupt]:\n");
 }
 void isr_machine_software(void)
 {
-    printf("Machine software interrupt generated\n");
+    printf("\t[ISR - Machine Software Interrupt]:\n");
 }
 void isr_user_timer(void)
 {
-    printf("User timer interrupt generated\n");
+    printf("\t[ISR - User Timer Interrupt]:\n");
 }
 void isr_supervisor_timer(void)
 {
-    printf("Supervisor timer interrupt generated");
+    printf("\t[ISR - Supervisor Timer Interrupt]:\n");
 }
 void isr_machine_timer(void)
 {
-    printf("Machine timer interrupt generated\n");
+    printf("\t[ISR - Machine Timer Interrupt]:\n");
 }
 void isr_user_external(void)
 {
-    printf("User external interrupt generated");
+    printf("\t[ISR - User External Interrupt]:\n");
 }
 void isr_supervisor_external(void)
 {
-    printf("Supervisor external interrupt generated");
+    printf("\t[ISR - Supervisror External Interrupt]:\n");
 }
 void isr_machine_external(void)
 {
-    printf("Machine external interrupt generated");
+    printf("\t[ISR - Machine External Interrupt]:\n");
 }
 
 /*
@@ -373,5 +369,17 @@ void isr_machine_external(void)
 */
 void isr_reserved(void)
 {
-    printf("\n\n Error: reserved interrupt code used \n\n");
+    printf("\t[ISR - Error   Reserved]\n");
+}
+
+
+/*
+    Function called to load the address of code termination and stop the execution
+*/
+void code_termination(void)
+{
+    // printf("\t[ESR - U mode ecall]:\tTerminating execution ...\n");
+    asm("la t0, terminate_execution");
+    asm("csrw mepc, t0");
+    asm("mret");
 }
