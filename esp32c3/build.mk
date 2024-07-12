@@ -1,5 +1,4 @@
 PROG        ?= firmware
-ASM_DUMP    ?= dump
 ARCH        ?= esp32c3
 RISC_V_TE   ?= $(realpath $(dir $(lastword $(MAKEFILE_LIST)))/..)
 ESPUTIL     ?= $(RISC_V_TE)/esputil/esputil
@@ -55,4 +54,4 @@ $(ESPUTIL): $(RISC_V_TE)/esputil/esputil.c
 	make -C $(RISC_V_TE)/esputil esputil
 
 clean:
-	@rm -rf *.{bin,elf,map,lst,tgz,zip,hex} $(PROG)* $(ASM_DUMP)*
+	@rm -rf *.{bin,elf,map,lst,tgz,zip,hex} $(PROG)*

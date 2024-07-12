@@ -1,15 +1,16 @@
 #ifndef SHADOW_STACK_H
 #define SHADOW_STACK_H
 
-#define MAX_SIZE 100
+#define MAX_SIZE 63
 
 typedef struct
 {
-    unsigned long addresses[MAX_SIZE];
-    int top;
+    unsigned int addresses[MAX_SIZE];
+    short top;
 } SStack;
 
-int push(SStack* stack, unsigned long address) __attribute__((section(".intr_service_routines")));
-unsigned long pop(SStack* stack)               __attribute__((section(".intr_service_routines")));
+short push(SStack *stack, unsigned int address) __attribute__((section(".intr_service_routines")));
+unsigned int pop(SStack *stack)                 __attribute__((section(".intr_service_routines")));
+void initStack(SStack *stack)                   __attribute__((section(".intr_service_routines")));
 
 #endif

@@ -27,10 +27,10 @@ void esr_handler_load_addr_mis(void)   __attribute__((section(".intr_service_rou
 void esr_handler_load_acc_fault(void)  __attribute__((section(".intr_service_routines")));
 void esr_handler_AMO_addr_mis(void)    __attribute__((section(".intr_service_routines")));
 void esr_handler_AMO_acc_fault(void)   __attribute__((section(".intr_service_routines")));
-void esr_handler_U_mode_ecall(unsigned long ecall_code, 
-                                unsigned long dst_address, 
-                                unsigned long params, 
-                                unsigned long mepc) __attribute__((section(".intr_service_routines")));
+void esr_handler_U_mode_ecall(unsigned int ecall_code, 
+                                unsigned int dst_address, 
+                                unsigned int params, 
+                                unsigned int mepc) __attribute__((section(".intr_service_routines")));
 void esr_handler_S_mode_ecall(void)     __attribute__((section(".intr_service_routines")));
 void esr_handler_M_mode_ecall(void)     __attribute__((section(".intr_service_routines")));
 void esr_handler_instr_page_fault(void) __attribute__((section(".intr_service_routines")));
@@ -38,7 +38,7 @@ void esr_handler_load_page_fault(void)  __attribute__((section(".intr_service_ro
 void esr_handler_AMO_page_fault(void)   __attribute__((section(".intr_service_routines")));
 void esr_handler_reserved(void)         __attribute__((section(".intr_service_routines")));
 
-void code_termination(void) __attribute__((section(".intr_service_routines")));
+void code_termination(void)             __attribute__((section(".intr_service_routines")));
 
 __attribute__((section(".shadow_stack"))) SStack shadow_stack = {.top = -1};
 
@@ -79,19 +79,19 @@ Interrupt | exception Code | Description
 
 void interrupt_vector_table(void)
 {
-    __asm__ volatile("j synchronous_exception_handler");
-    __asm__ volatile("j isr_supervisor_software");
-    __asm__ volatile("j isr_reserved");
-    __asm__ volatile("j isr_machine_software");
-    __asm__ volatile("j isr_user_timer");
-    __asm__ volatile("j isr_supervisor_timer");
-    __asm__ volatile("j isr_reserved");
-    __asm__ volatile("j isr_machine_timer");
-    __asm__ volatile("j isr_user_external");
-    __asm__ volatile("j isr_supervisor_external");
-    __asm__ volatile("j isr_reserved");
-    __asm__ volatile("j isr_machine_external");
-    __asm__ volatile("j isr_reserved");
+    asm volatile("j synchronous_exception_handler");
+    asm volatile("j isr_supervisor_software");
+    asm volatile("j isr_reserved");
+    asm volatile("j isr_machine_software");
+    asm volatile("j isr_user_timer");
+    asm volatile("j isr_supervisor_timer");
+    asm volatile("j isr_reserved");
+    asm volatile("j isr_machine_timer");
+    asm volatile("j isr_user_external");
+    asm volatile("j isr_supervisor_external");
+    asm volatile("j isr_reserved");
+    asm volatile("j isr_machine_external");
+    asm volatile("j isr_reserved");
 }
 
 void synchronous_exception_handler(void)
@@ -116,7 +116,7 @@ void synchronous_exception_handler(void)
         exception code contains the code of what triggered the exception/interrupt
     */
 
-    unsigned long mcause, mepc, a0, a1, a2;
+    unsigned int mcause, mepc, a0, a1, a2;
     asm volatile("csrr %0, mcause" : "=r"(mcause)); // Load mcause to inspect the cause of the trap
     asm volatile("csrr %0, mepc" : "=r"(mepc));     // Load mepc to retrieve the ecall adress
     asm volatile("add %0, a0, x0" : "=r"(a0));      // Load a0 which contains the ecall code
@@ -264,7 +264,7 @@ void esr_handler_AMO_acc_fault(void)
         - If allowed do nothing since value already popped
 
 */
-void esr_handler_U_mode_ecall(unsigned long ecall_code, unsigned long dst_address, unsigned long params, unsigned long mepc)
+void esr_handler_U_mode_ecall(unsigned int ecall_code, unsigned int dst_address, unsigned int params, unsigned int mepc)
 {
     if (ecall_code == 1)
     {
@@ -273,14 +273,14 @@ void esr_handler_U_mode_ecall(unsigned long ecall_code, unsigned long dst_addres
     }
     else if (ecall_code == 2)
     {
-        printf("\t[ESR - U Mode Ecall]:\tJump check requested for %8lx and mepc: %8lx\n", dst_address, mepc);
+        printf("\t[ESR - U Mode Ecall]:\tJump check requested for %x and mepc: %x\n", dst_address, mepc);
         /*
             CFI CHECK
                 mepc + 4 and destiantion address must be legal
 
             IF ALLOWED PUSH mepc + 4 (ecall) + 2 (jump instruction) + 2 * number of parameters (2 for each load) TO STACK
         */
-        unsigned long address_to_store = mepc + 6 + 2 * params;
+        unsigned int address_to_store = mepc + 6 + 2 * params;
         if(push(&shadow_stack, address_to_store) != 1)
         {  
             printf("\t[ESR - U Mode Ecall]:\tStack is full not able to store address, terminating execution ...\n");
@@ -290,13 +290,13 @@ void esr_handler_U_mode_ecall(unsigned long ecall_code, unsigned long dst_addres
     }
     else if (ecall_code == 3)
     {
-        printf("\t[ESR - U Mode Ecall]:\tReturn check requested for %8lx and mepc: %8lx\n", dst_address, mepc);
+        printf("\t[ESR - U Mode Ecall]:\tReturn check requested for %x and mepc: %x\n", dst_address, mepc);
 
         /*
             SHADOW STACK CHECK 
                 destination address and popped address must be equal
         */
-        unsigned long stored_address = pop(&shadow_stack);
+        unsigned int stored_address = pop(&shadow_stack);
         if (stored_address == 0 || stored_address != dst_address)
         {
             printf("\t[ESR - U Mode Ecall]:\tWrong return address or empty stack, terminating execution ...\n");
@@ -305,7 +305,7 @@ void esr_handler_U_mode_ecall(unsigned long ecall_code, unsigned long dst_addres
         printf("\t[ESR - U Mode Ecall]:\tReturn address is correct, return allowed ...\n");
     } else
     {
-        printf("\t[ESR - U Mode Ecall]:\tUndefined Ecall code %8ld\n", ecall_code);
+        printf("\t[ESR - U Mode Ecall]:\tUndefined Ecall code %d\n", ecall_code);
     }
 }
 void esr_handler_S_mode_ecall(void)
