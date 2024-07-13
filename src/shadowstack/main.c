@@ -5,16 +5,6 @@
 
 int main(void)                 __attribute__((section(".machine_setup")));
 void terminate_execution(void) __attribute__((section(".machine_setup")));
-/*
-    JTAG
-    black: ground
-    red: 5V
-    green: 19
-    white: 18
-*/
-
-// openocd -f openocd/esp32c3-builtin.cfg
-// riscv32-esp-elf-gdb -x .gdbinit src/shadowstack/firmware.elf
 
 int main(void)
 {
