@@ -131,10 +131,10 @@ int main(void)
 
      /*
           Configurations:
-          first:  [0 00 01 1 1 1] -> TOR setup, not locked with XRW permissions
-          second: [0 00 11 0 1 1] -> NAPOT setup, not locked with RW permissions
-          third:  [0 00 01 1 1 1] -> TOR setup, not locked with XRW permissions
-          fourth: [0 00 00 1 1 1] -> Disabled
+          first:  [0 00 01 1 1 1] = 0x0F -> TOR setup, not locked with XRW permissions
+          second: [0 00 11 0 1 1] = 0x1B -> NAPOT setup, not locked with RW permissions
+          third:  [0 00 01 1 1 1] = 0x0F -> TOR setup, not locked with XRW permissions
+          fourth: [0 00 00 1 1 1] = 0x07 -> Disabled
      */
      asm("li t0, 0x070F1B0F"); // Load configuration bits in t0
      asm("csrw pmpcfg0, t0");  // Write configuration in csr
