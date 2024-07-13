@@ -8,11 +8,11 @@ _eram = ORIGIN(dram) + LENGTH(dram);
 ENTRY(_reset)
 
 SECTIONS {
-  .intr_vector_table :{ KEEP(*(.intr_vector_table)) }  > iram
+  .shadow_stack :{ KEEP(*(.shadow_stack)) }  > iram
+
+  .intr_vector_table :{ KEEP(*(.interrupt_vector_table)) }  > iram
 
   .intr_service_routines :{ KEEP(*(.intr_service_routines)) }  > iram
-
-  .shadow_stack :{ KEEP(*(.shadow_stack)) }  > iram
 
   .user_code :{ KEEP(*(.user_code)) }  > iram
 

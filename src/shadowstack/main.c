@@ -109,21 +109,44 @@ int main(void)
 
      */
 
-     // asm("la t0, shadow_stack");
-     // unsigned long shads;
-     // asm volatile("add %0, t0, x0" : "=r"(shads));
-     // printf("shadow stack address is: %8lx\n", shads);
+     // First section covers addresses from 0 to the start of the shadow stack section
+     // For this part we apply a TOR configuration with XWR privileges
+     asm("la t0, shadow_stack"); // Load address of shadow stack
+     asm("srli t0, t0, 2");      // srli of 2 
+     asm("csrw pmpaddr0, t0");   // Load address in csr
 
-     // get the address of shadowstack section
-     // get the address of interrupt vector table
-     // insert shadowstack address as TOR with R-W privileges
-     // insert intr vector table as NAPOT
+     // Second section covers the addresses of the shadow stack section
+     // For this part we apply a NAPOT configuration with RW privileges
 
-     asm("li t0, 0x90000000");
-     asm("srli t0, t0, 2");
-     asm("csrw pmpaddr0, t0");
-     asm("li t0, 0x0707070F"); // 00000111 00000111 00000111 00001111
-     asm("csrw pmpcfg0, t0");
+     // We take t0 which contains the address of shadow_stack shifted by 2 
+     // and we apply an or with 6 to create a NAPOT space of 256B
+     asm("ori t0, t0, 6");
+     asm("csrw pmpaddr1, t0"); // Load address in csr
+
+     // Third section covers all the addresses from the end of shadow stack upwards
+     // For this part we apply a TOR configuration with XRW privileges
+     asm("li t0, 0x70000000"); // Load address big enough to cover rest of code
+     asm("srli t0, t0, 2");    // srli of 2 
+     asm("csrw pmpaddr2, t0"); // Load address in csr
+
+     /*
+          Configurations:
+          first:  [0 00 01 1 1 1] -> TOR setup, not locked with XRW permissions
+          second: [0 00 11 0 1 1] -> NAPOT setup, not locked with RW permissions
+          third:  [0 00 01 1 1 1] -> TOR setup, not locked with XRW permissions
+          fourth: [0 00 00 1 1 1] -> Disabled
+     */
+     asm("li t0, 0x070F1B0F"); // Load configuration bits in t0
+     asm("csrw pmpcfg0, t0");  // Write configuration in csr
+
+     /*
+          OLD PMP CONFIGURATION
+     */
+     // asm("li t0, 0x90000000");
+     // asm("srli t0, t0, 2");
+     // asm("csrw pmpaddr0, t0");
+     // asm("li t0, 0x0707070F");
+     // asm("csrw pmpcfg0, t0");
 
      printf("Jumping to user code for execution ...\n");
 

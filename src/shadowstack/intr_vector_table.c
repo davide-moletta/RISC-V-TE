@@ -3,7 +3,7 @@
 #include "shadow_stack.h"
 
 // Interrupt vector table with all the calls to interrupt service routines
-void interrupt_vector_table(void) __attribute__((section(".intr_vector_table")));
+void interrupt_vector_table(void) __attribute__((section(".interrupt_vector_table")));
 
 // Interrupt Service Routines to handle interrupts
 void synchronous_exception_handler(void) __attribute__((section(".intr_service_routines")));

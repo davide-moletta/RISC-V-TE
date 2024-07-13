@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include "user_code.h"
+#include "intr_vector_table.h"
+#include "shadow_stack.h"
 
 void user_code()                 __attribute__((section(".user_code")));
 int sum(int a, int b)            __attribute__((section(".user_code")));
@@ -30,6 +32,10 @@ int multiplication(int a, int b)
 
 void user_code()
 {
+    printf("Trying to push\n");
+    push(&shadow_stack, 10);
+    printf("pushed %d\n", pop(&shadow_stack));
+    
     int first_num = 10;
     int second_num = 20;
     printf("Summing %d and %d\n", first_num, second_num);
