@@ -1,7 +1,6 @@
 #include <mdk.h>
 #include "intr_vector_table.h"
 #include "usercode/user_entry.h"
-#include "shadow_stack.h"
 
 int main(void)                 __attribute__((section(".machine_setup")));
 void terminate_execution(void) __attribute__((section(".machine_setup")));
@@ -115,7 +114,7 @@ int main(void)
 
      // Third section covers all the addresses from the end of shadow stack upwards
      // For this part we apply a TOR configuration with XRW privileges
-     asm("li t0, 0x70000000"); // Load address big enough to cover rest of code
+     asm("li t0, 0x90000000"); // Load value big enough to cover rest of memory
      asm("srli t0, t0, 2");    // srli of 2 
      asm("csrw pmpaddr2, t0"); // Load address in csr
 
