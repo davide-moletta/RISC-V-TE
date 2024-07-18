@@ -17,12 +17,9 @@ int sum(int a, int b)
     printf("Result of mul is %d\n", mul_result);
 
     // Since sum is not a leaf we must check its return address
-    asm("lw a7, 12(sp)");
-    asm("addi a7, a7, 1");
-
-    // asm("lw a1, 12(sp)"); // Load return address from stack
-    // asm("li a0, 3");      // Load the code for the return check
-    asm("ecall");         // Perform ecall
+    asm("lw a7, 12(sp)");  // Load return address from stack
+    asm("addi a7, a7, 1"); // Add 1 to inform that this is a return check
+    asm("ecall");          // Perform ecall
 
     return sum_result;
 }
@@ -44,28 +41,9 @@ void user_code()
     printf("Summing %d and %d\n", first_num, second_num);
 
     // Since sum is not a leaf we need to store its return address
-    asm("li a6, 2");
-    asm("la a7, sum");
-
-
-    // asm("la a1, sum"); // Load the destination address
-    // asm("li a0, 2");   // Load the code for the jump check
+    asm("li a6, 2");   // Load the number of parameters (not needed when instrumented)
+    asm("la a7, sum"); // Load the destination address
     asm("ecall");      // Perform ecall
 
     sum(first_num, second_num);
 }
-
-/*
-    CODE INSTRUMENTATION
-
-    For jump checks
-    asm("la a1, sum"); // Load the destination address
-    asm("li a0, 2");   // Load the code for the jump check
-    asm("ecall");      // Perform ecall
-
-    For return checks
-    asm("lw t0, 12(sp)"); // Load return address from stack
-    asm("mv a1, t0");     // Load the destination address in a1
-    asm("li a0, 3");      // Load the code for the return check
-    asm("ecall");         // Perform ecall
-*/

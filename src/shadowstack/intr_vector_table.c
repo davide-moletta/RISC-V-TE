@@ -116,8 +116,8 @@ void synchronous_exception_handler(void)
     unsigned int mcause, mepc, a7, a6;
     asm volatile("csrr %0, mcause" : "=r"(mcause)); // Load mcause to inspect the cause of the trap
     asm volatile("csrr %0, mepc" : "=r"(mepc));     // Load mepc to retrieve the ecall adress
-    asm volatile("add %0, a7, x0" : "=r"(a7));      // Load a0 which contains the ecall code
-    asm volatile("add %0, a6, x0" : "=r"(a6));      // Load a2 which contains the number of parameters
+    asm volatile("add %0, a7, x0" : "=r"(a7));      // Load a7 which contains the addition address and ecall encoded code
+    asm volatile("add %0, a6, x0" : "=r"(a6));      // Load a6 which contains the number of parameters (not needed when instrumented)
 
     // Check the MSB (bit 31) of the mcause register
     if (mcause & 0x80000000)
@@ -240,17 +240,17 @@ void esr_handler_AMO_acc_fault(void)
 /*
     CUSTOM ECALL CODES
 
-    Ecall code (a0) | a1 | a2 | Description
-            1       | -  | -  | Used to terminate the execution
-            2       | -  | -  | Used to check jump instruction
-            3       | -  | -  | Used to check return instruction
+    Ecall code (a7) | a6                    | Description
+            1       | -                     | Used to terminate the execution
+         address    | number of parameters  | Used to check jump instruction
+        address + 1 | -                     | Used to check return instruction
 
     To check jump instruction:
         - mepc
         - jump destination
         - CFG entry (if exists)
 
-        - If allowed store return address (jump instruction + 4) in shadow stack
+        - If allowed store return address (mepc + 6) in shadow stack
 
     To check return instruction:
         - return address (ra)
@@ -274,7 +274,7 @@ void esr_handler_U_mode_ecall(unsigned int ecode_address_encoding, unsigned int 
             CFI CHECK
                 mepc + 4 and destiantion address must be legal
 
-            IF ALLOWED PUSH mepc + 4 (ecall) + 2 (jump instruction) + 2 * number of parameters (2 for each load) TO STACK
+            IF ALLOWED PUSH mepc + 4 (ecall) + 2 (jump instruction) + 2 * number of parameters (2 for each load) to shadow stack
         */
         unsigned int address_to_store = mepc + 6 + 2 * param_number;
         if(push(&shadow_stack, address_to_store) != 1)
