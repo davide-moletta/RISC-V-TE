@@ -12,6 +12,6 @@ void user_mode_entry_point()
 
     printf("\n\n--- End of user code ---\n\n");
 
-    asm("li a0, 1"); // Load 1 in a0 (code to terminate execution)
+    asm("li a7, 1"); // Load 1 in a0 (code to terminate execution)
     asm("ecall");    // Ecall to terminate execution
 }
