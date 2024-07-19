@@ -92,7 +92,7 @@ int main(void)
 
 
          in pmpaddrX we store the address for which we want to configure the PMP
-         shifted right by 2 since the pmpadrr contains bits [33:2]
+         shifted right by 2 since the pmpaddr contains bits [33:2]
 
          in pmpcfgX we store the configuration for that PMP
 

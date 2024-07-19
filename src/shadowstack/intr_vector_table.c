@@ -115,7 +115,7 @@ void synchronous_exception_handler(void)
 
     unsigned int mcause, mepc, a7, a6;
     asm volatile("csrr %0, mcause" : "=r"(mcause)); // Load mcause to inspect the cause of the trap
-    asm volatile("csrr %0, mepc" : "=r"(mepc));     // Load mepc to retrieve the ecall adress
+    asm volatile("csrr %0, mepc" : "=r"(mepc));     // Load mepc to retrieve the ecall address
     asm volatile("add %0, a7, x0" : "=r"(a7));      // Load a7 which contains the addition address and ecall encoded code
     asm volatile("add %0, a6, x0" : "=r"(a6));      // Load a6 which contains the number of parameters (not needed when instrumented)
 
@@ -272,7 +272,7 @@ void esr_handler_U_mode_ecall(unsigned int ecode_address_encoding, unsigned int 
         printf("\t[ESR - U Mode Ecall]:\tJump check requested for %x and mepc: %x\n", ecode_address_encoding, mepc);
         /*
             CFI CHECK
-                mepc + 4 and destiantion address must be legal
+                mepc + 4 and destination address must be legal
 
             IF ALLOWED PUSH mepc + 4 (ecall) + 2 (jump instruction) + 2 * number of parameters (2 for each load) to shadow stack
         */
@@ -315,7 +315,7 @@ void esr_handler_M_mode_ecall(void)
 }
 void esr_handler_instr_page_fault(void)
 {
-    printf("\t[ESR - Intruction Page Fault]: \n");
+    printf("\t[ESR - Instruction Page Fault]: \n");
 }
 void esr_handler_load_page_fault(void)
 {
@@ -367,7 +367,7 @@ void isr_user_external(void)
 }
 void isr_supervisor_external(void)
 {
-    printf("\t[ISR - Supervisror External Interrupt]:\n");
+    printf("\t[ISR - Supervisor External Interrupt]:\n");
 }
 void isr_machine_external(void)
 {

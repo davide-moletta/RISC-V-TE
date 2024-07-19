@@ -2,15 +2,6 @@
 src/shadowstack/firmware.*
 dump.asm
 
-# Ignore debugging files
-openocd/*
-openocd
-.gdbinit
-.vscode/*
-.vscode
-
 # Ignore miscellaneous files
 TODO
-
-# Temporary
-stack_test.c
+.vscode
