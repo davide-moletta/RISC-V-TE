@@ -6,6 +6,11 @@ The project provides secure U-mode code execution and performs controls on both 
 Return instructions are checked thanks to a shadow stack.
 Jump instructions are checked thanks to the Control Flow Graph.
 
+## Requirements
+
+This project requires the [riscv-none-elf toolchain](https://github.com/xpack-dev-tools/riscv-none-elf-gcc-xpack) to work. 
+Other toolchains may be used but must be configured either in the python flasher or in the Makefile.
+
 ## How to run
 
 Clone the repository:
