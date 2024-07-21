@@ -28,3 +28,11 @@ Clean binaries and dumps:
 ```
 make -C .../RISC-V-TE/src/shadowstack clean
 ```
+
+Optionally it's possible to use the python flasher (soon with instrumenting capabilities):
+```
+python3 flasher.py [output file name] [operation]
+```
+where the operation can be:
+- build: to build the source code and create the .bin, .elf and .S files
+- run: to build and flash the executable on the board
