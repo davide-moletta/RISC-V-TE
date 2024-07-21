@@ -7,5 +7,7 @@ TODO
 .vscode
 
 # Ignore toolsExtra output files
-toolsExtra/firmware.*
+toolsExtra/*.bin
+toolsExtra/*.elf
 toolsExtra/warnings.log
+toolsExtra/*.s
