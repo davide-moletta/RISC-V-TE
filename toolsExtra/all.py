@@ -34,9 +34,12 @@ def run_command(command, new_file):
             with open(f"{DIRECTORY}/toolsExtra/warnings.log", "a") as error_file:
                 subprocess.run(command_list, stdout=output_file, stderr=error_file, check=True)
     else:
-        command_list = shlex.split(command)
-        with open(f"{DIRECTORY}/toolsExtra/warnings.log", "a") as error_file:
-            subprocess.run(command_list, stderr=error_file, check=True)
+        try:
+            command_list = shlex.split(command)
+            with open(f"{DIRECTORY}/toolsExtra/warnings.log", "a") as error_file:
+                subprocess.run(command_list, stderr=error_file, check=True)
+        except KeyboardInterrupt:
+            exit(0)
 
 # Removes old .elf, .bin and .S files before building new ones
 def clear():
@@ -72,7 +75,14 @@ def build():
 
 def run():
     build()
-    print("Running the executable...")
+
+    print("Flashing the program...")
+
+    flash_command = f"{ESPUTIL} flash {FLASH_ADDR} {OUTPUT}.bin" # Flashes the .bin program to the board
+    run_command(flash_command, False)
+
+    monitor_command = f"{ESPUTIL} monitor" # Monitor used to see the execution on the board
+    run_command(monitor_command, False)
 
 def secure_build():
     print("Securely building the sources...")
