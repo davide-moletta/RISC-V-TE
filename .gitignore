@@ -5,3 +5,7 @@ dump.asm
 # Ignore miscellaneous files
 TODO
 .vscode
+
+# Ignore toolsExtra output files
+toolsExtra/firmware.*
+toolsExtra/warnings.log
