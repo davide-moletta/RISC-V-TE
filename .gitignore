@@ -11,3 +11,4 @@ toolsExtra/*.bin
 toolsExtra/*.elf
 toolsExtra/warnings.log
 toolsExtra/*.s
+toolsExtra/__pycache__
