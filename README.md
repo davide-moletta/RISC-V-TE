@@ -6,6 +6,8 @@ The project provides secure U-mode code execution and performs controls on both 
 Return instructions are checked thanks to a shadow stack.
 Jump instructions are checked thanks to the Control Flow Graph.
 
+Note that this project has been developed on Espressif's [ESP32-C3-DevKitM-1](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32c3/esp32-c3-devkitm-1/index.html). Thus, it uses Espressif's utils to flash the exxecutable on the board.
+
 ## Requirements
 
 This project requires the [riscv-none-elf toolchain](https://github.com/xpack-dev-tools/riscv-none-elf-gcc-xpack) to work. 
