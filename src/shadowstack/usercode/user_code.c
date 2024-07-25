@@ -60,12 +60,12 @@ void user_code()
     // printf("pushed %d\n", pop(&shadow_stack));
     
     // srand((unsigned int)(time(NULL)));
-    int random = rand();  
+    // int random = rand();  
 
     int first_num = 20;
     int second_num = 10;
 
-    if(random < RAND_MAX/2)
+    if(first_num > second_num)
     {
         printf("Summing %d and %d\n", first_num, second_num);
         // Since sum is not a leaf we need to store its return address
@@ -73,7 +73,7 @@ void user_code()
         // asm("ecall");      // Perform ecall
         // asm("li a6, 2");   // Load the number of parameters (not needed when instrumented)
         sum(first_num, second_num);
-    } else if (random >= RAND_MAX/2)
+    } else
     {
         printf("Subtracting %d and %d\n", first_num, second_num);
         // Since diff is not a leaf we need to store its return address
@@ -81,8 +81,5 @@ void user_code()
         // asm("ecall");      // Perform ecall
         // asm("li a6, 2");   // Load the number of parameters (not needed when instrumented)
         diff(first_num, second_num);
-    } else 
-    {
-        printf("Error!\n");
-    }
+    } 
 }
