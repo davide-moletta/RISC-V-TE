@@ -34,10 +34,17 @@ Clean binaries and dumps:
 make -C .../RISC-V-TE/src/shadowstack clean
 ```
 
-Optionally it's possible to use the python flasher inside toolExtra/ (soon with instrumenting capabilities):
+Optionally it's possible to use the python flasher inside toolExtra/:
 ```
 python3 flasher.py [output file name] [operation]
 ```
 where the operation can be:
-- build: to build the source code and create the .bin, .elf and .S files
+- build: to build the source code and create the .bin, .elf and .s files
 - run: to build and flash the executable on the board
+- secure-build: to instrument the code and create the .bin, .elf and .s files
+- secure-run: to build and flash the instrumented executable on the board
+- clear: to delete .bin, .elf, .s and .log files
+
+Note that the file instrumenter.py can be used:
+- through the flasher.py script with secure-build and secure-run commands
+- manually by providing the assembly files as input (create the assembly files manually, instrument them with instrumenter.py and finish assembly and linking manually)
