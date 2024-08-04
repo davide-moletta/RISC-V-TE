@@ -7,7 +7,7 @@ curr_dir = subprocess.run(['pwd'], capture_output = True, text = True) # Retriev
 DIRECTORY = os.path.dirname(curr_dir.stdout.strip())                   # Current working directory
 SOURCES_DIRECTORY = f"{DIRECTORY}/src/shadowstack"                     # User file directory
 
-TOOLCHAIN = "riscv-none-elf" # Toolchain, can be changed. Must be included in the PATH
+TOOLCHAIN = "riscv-none-elf" # Toolchain, can be changed. Must be included in the PATH or specified here
 CFLAGS = (
     "-W -Wall -Wextra -Werror -Wundef -Wshadow -pedantic -Wdouble-promotion "
     "-fno-common -Wconversion -march=rv32imc_zicsr -mabi=ilp32 -O1 -ffunction-sections "
@@ -23,11 +23,11 @@ def run_command(command, capture_output=False):
     command_list = shlex.split(command)
     if(capture_output):
         with open(f"{DIRECTORY}/toolsExtra/{OUTPUT}.s", "w") as output_file:
-            with open(f"{DIRECTORY}/toolsExtra/warnings.log", "a") as error_file:
+            with open(f"{DIRECTORY}/toolsExtra/logs.log", "a") as error_file:
                 subprocess.run(command_list, stdout=output_file, stderr=error_file, check=True)
     else:
         try:
-            with open(f"{DIRECTORY}/toolsExtra/warnings.log", "a") as error_file:
+            with open(f"{DIRECTORY}/toolsExtra/logs.log", "a") as error_file:
                 subprocess.run(command_list, stderr=error_file, check=True)
         except KeyboardInterrupt:
             sys.exit(0)    
@@ -79,11 +79,11 @@ def secure_build():
     run_command(f"{TOOLCHAIN}-gcc -S {CFLAGS} {SOURCES} {extra_sources}", capture_output=False) # Creates individual assembly files
 
     # Instrument code here
-    # instrumenter.instrument(files_to_instrument) # Instrument the files
+    instrumenter.instrument(files_to_instrument) # Instrument the files
 
     # Retrieve all assembly files to be assembled and linked
     all_assembly_files = " ".join([f"{DIRECTORY}/toolsExtra/{file}" for file in os.listdir(f"{DIRECTORY}/toolsExtra") if file.endswith(".s")])
-
+  
     print("Creating .elf file...")
     run_command(f"{TOOLCHAIN}-gcc {all_assembly_files} {LINKFLAGS} -o {OUTPUT}.elf", capture_output=False) # Creates .elf file
 
@@ -99,7 +99,7 @@ def secure_build():
     print("Files instrumented and built successfully")
 
 def main():
-    if (len(sys.argv) < 3 or "help" in sys.argv or "-help" in sys.argv or "--help" in sys.argv or "h" in sys.argv or "-h" in sys.argv or "--h" in sys.argv): 
+    if (len(sys.argv) < 2 or "help" in sys.argv or "-help" in sys.argv or "--help" in sys.argv or "h" in sys.argv or "-h" in sys.argv or "--h" in sys.argv): 
         print("This file is used to compile, instrument and run the code.\n"
               "Input parameters should be provided in the following order.\n"
               "python3 flasher.py:\n"
@@ -111,11 +111,21 @@ def main():
               "\t\t- secure-run instruments the code, then builds and run it\n"
               "\t\t- clear deletes the files (.elf, .bin, .s, .log)")
         sys.exit(1)
+
+    command = sys.argv[1]
+    if command != "clear" and len(sys.argv) < 3:
+        print("Error: Not enough parameters provided for the selected command.\n"
+              "Use 'clear' without additional parameters, or specify an output file name and command.")
+        sys.exit(1)
     
     global OUTPUT
-    OUTPUT = sys.argv[1]
+    if command == "clear":
+        OUTPUT = None
+    else:
+        OUTPUT = sys.argv[1]
 
-    match sys.argv[2]:
+
+    match sys.argv[2] if command != "clear" else "clear":        
         case "build":
             build()
         case "run":

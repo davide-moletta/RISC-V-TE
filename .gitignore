@@ -9,6 +9,6 @@ TODO
 # Ignore toolsExtra output files
 toolsExtra/*.bin
 toolsExtra/*.elf
-toolsExtra/warnings.log
+toolsExtra/logs.log
 toolsExtra/*.s
 toolsExtra/__pycache__
