@@ -5,12 +5,19 @@ UNDIR_JUMP_PATTERN = r'\b(jalr)\b\s+(\w+)'                      # Regex to find 
 RET_PATTERN = r'\b(jr)\b\s+(\w+)'                               # Regex to find return instructions
 FUNC_START_PATTERN = r'^[ \t]*([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*$' # Regex to find the start of a function
 
-JUMP_TEMPLATE = "\tlw  a7,{}\n\tecall\n"                 # Template to substitute jump code
-RET_TEMPLATE = "\tlw  a7,{}\n\taddi\ta7,a7,1\n\tecall\n" # Template to substitute return code
+JUMP_TEMPLATE = "\tla  a7,{}\n\tecall\n"                 # Template to substitute jump code
+RET_TEMPLATE = "\tmv  a7,{}\n\taddi\ta7,a7,1\n\tecall\n" # Template to substitute return code
 
 # List of standard C functions
-STD_C_FUNCS = ["printf", "scanf", "malloc", "free", "strlen", "strcmp", "strcpy",
-               "strncpy", "fopen", "fclose", "fread", "fwrite", "fgets", "fputs"]
+STD_C_FUNCS = ["memset", "memcpy", "memmove", "memcmp", "strcpy", "strncpy", "strcmp", "strncmp", 
+                "strlen", "strstr", "bzero", "isalnum", "isalpha", "isascii", "isblank", "iscntrl", 
+                "isdigit", "islower", "isgraph", "isprint", "ispunct", "isspace", "isupper", "toupper", 
+                "tolower", "toascii", "memccpy", "memchr", "memrchr", "strcasecmp", "strcasestr", "strcat",
+                "strdup", "strchr", "strcspn", "strcoll", "strlcat", "strlcpy", "strlwr", "strncasecmp", 
+                "strncat", "strndup", "strnlen", "strrchr", "strsep", "strspn", "strtok_r", "strupr", "longjmp", 
+                "setjmp", "abs", "div", "labs", "ldiv", "qsort", "rand_r", "rand", "srand", "utoa", "itoa", 
+                "atoi", "atol", "strtol", "strtoul", "printf", "__udivdi3", "__umoddi3", "uart_tx_one_char2",
+                "uart_rx_one_char", "uart_rx_one_char_block", "uart_rx_readbuff", "__divdi3"]
 leaf_functions = []
 
 # Check if target function is a leaf
@@ -33,7 +40,7 @@ def is_leaf(function_name, files):
                     leaf_functions.append(function_name) # Add the function name to the list of leaf functions
                     return True                          
                 if re.search(DIR_JUMP_PATTERN, line): # If we match a jump instruction the target function is not a leaf
-                    return False                      ### maybe fot std function this is still considered a leaf
+                    return False                      ### maybe fot std function this is still considered a leaf ###
     return True  # If no calls found, assume the function is a leaf
 
 def instrument(assembly_files):
@@ -61,7 +68,7 @@ def instrument(assembly_files):
             ret_match = re.search(RET_PATTERN, line)              # If we match a return instruction
             if ret_match and curr_function not in leaf_functions: # Check if the current function is a leaf. If it is, skip
                 instr, label = ret_match.groups()                 # Get the instruction and the label
-                new_lines.append(RET_TEMPLATE.format("12(sp)")) ### WORKAROUND, with ra there is an undefined error ###
+                new_lines.append(RET_TEMPLATE.format(label))      # Append the label that contains the return address
                 replaced_return += 1
 
             new_lines.append(line) # Write new lines

@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <time.h>
 #include <stdlib.h> 
 #include "user_code.h"
 // #include "intr_vector_table.h"
