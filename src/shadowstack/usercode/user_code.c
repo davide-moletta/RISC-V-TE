@@ -57,28 +57,35 @@ void user_code()
     // printf("Trying to push\n");
     // push(&shadow_stack, 10);
     // printf("pushed %d\n", pop(&shadow_stack));
-    
-    // srand((unsigned int)(time(NULL)));
-    // int random = rand();  
 
-    int first_num = 20;
-    int second_num = 10;
+    int first_num, second_num, operation;
 
-    if(first_num > second_num)
+    scanf("%d %d %d", &first_num, &second_num, &operation);
+
+    int (*funPtr)(int, int);
+
+    switch (operation)
     {
+    case 1:
         printf("Summing %d and %d\n", first_num, second_num);
         // Since sum is not a leaf we need to store its return address
         // asm("la a7, sum"); // Load the destination address
         // asm("ecall");      // Perform ecall
         // asm("li a6, 2");   // Load the number of parameters (not needed when instrumented)
-        sum(first_num, second_num);
-    } else
-    {
+        funPtr = sum;
+        funPtr(first_num, second_num);    
+        break;
+    case 2:
         printf("Subtracting %d and %d\n", first_num, second_num);
         // Since diff is not a leaf we need to store its return address
         // asm("la a7, sum"); // Load the destination address
         // asm("ecall");      // Perform ecall
         // asm("li a6, 2");   // Load the number of parameters (not needed when instrumented)
-        diff(first_num, second_num);
-    } 
+        funPtr = diff;
+        funPtr(first_num, second_num);
+        break;
+    default:
+        printf("Wrong operation\n");
+        break;
+    }
 }
