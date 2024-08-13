@@ -43,7 +43,7 @@ int main(void)
      asm("csrr t0, mstatus");  // Load MSTATUS in t0
      asm("li t1, 0xFFFFE7FF"); // Load user mode status in t1
      asm("and t0, t0, t1");    // And to change MPP bits in MSTATUS to user mode
-     asm("or t0, t0, 8");      // Or to change MIE bits in MSTATUS to 0
+     asm("or t0, t0, 8");      // Or to change MIE bits in MSTATUS to 1
      asm("csrw mstatus, t0");  // Write new MSTATUS
 
      printf("Loading user mode entry point ...\n");

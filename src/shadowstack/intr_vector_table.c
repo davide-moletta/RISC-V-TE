@@ -113,6 +113,9 @@ void synchronous_exception_handler(void)
         exception code contains the code of what triggered the exception/interrupt
     */
 
+    // Disable user-level interrupts by clearing the UIE bit in mstatus CSR
+    asm volatile("csrc mstatus, %0" :: "r"(1 << 0));
+
     unsigned int mcause, mepc, a7, a6;
     asm volatile("csrr %0, mcause" : "=r"(mcause)); // Load mcause to inspect the cause of the trap
     asm volatile("csrr %0, mepc" : "=r"(mepc));     // Load mepc to retrieve the ecall address
@@ -184,6 +187,9 @@ void synchronous_exception_handler(void)
     {
         esr_handler_reserved();
     }
+
+    // Enable user-level interrupts by setting the UIE bit in mstatus CSR
+    asm volatile("csrs mstatus, %0" :: "r"(1 << 0));
 
     // Restore context
     // NOTE: this is needed only because the compiler sees this as a normal function so it stores the context and opens sp
