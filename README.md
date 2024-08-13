@@ -50,3 +50,8 @@ where the operation can be:
 Note that the file instrumenter.py can be used:
 - through the flasher.py script with secure-build and secure-run commands
 - manually by providing the assembly files as input (create the assembly files manually, instrument them with instrumenter.py and finish assembly and linking manually)
+
+To use the instumenter file withut the flasher run:
+```
+python3 instrumenter.py [file1.s] [file2.s] ... [fileN.s]
+```
