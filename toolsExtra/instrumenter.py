@@ -9,7 +9,7 @@ JUMP_TEMPLATE = "\tla  a7,{}\n\tecall\n"                 # Template to substitut
 RET_TEMPLATE = "\tmv  a7,{}\n\taddi\ta7,a7,1\n\tecall\n" # Template to substitute return code
 
 # List of standard C functions
-STD_C_FUNCS = ["memset", "memcpy", "memmove", "memcmp", "strcpy", "strncpy", "strcmp", "strncmp", 
+STD_C_FUNCS = ["memset", "memcpy", "memmove", "scanf", "memcmp", "strcpy", "strncpy", "strcmp", "strncmp", 
                 "strlen", "strstr", "bzero", "isalnum", "isalpha", "isascii", "isblank", "iscntrl", 
                 "isdigit", "islower", "isgraph", "isprint", "ispunct", "isspace", "isupper", "toupper", 
                 "tolower", "toascii", "memccpy", "memchr", "memrchr", "strcasecmp", "strcasestr", "strcat",
