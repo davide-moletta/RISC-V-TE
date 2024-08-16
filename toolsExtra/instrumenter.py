@@ -5,10 +5,15 @@ UNDIR_JUMP_PATTERN = r'\b(jalr)\b\s+(\w+)'                                      
 RET_PATTERN = r'\b(jr)\b\s+(\w+)'                                                                 # Regex to find return instructions
 FUNC_START_PATTERN = r'^[ \t]*([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*$'                                   # Regex to find the start of a function
 REGISTER_USE_PATTERN = r'\b(?:lw|la|li|addi|add|sub|mul|div|and|or|xor|sll|srl|sra)\b\s+(a[0-6])' # Regex to find the use of a registers before call
+STACK_OPENING_PATTERN = r'addi\s+sp,sp,(-\d+)'                                                    # Regex to find the opening of the stack
+SW_PATTERN = r'sw\s+\w+,\s*(\d+)\(sp\)'                                                           # Regex to find the store word operations
+CSRS_PATTERN = r'^\s*csrs\s+mstatus\s*,\s*\w+\s*$'                                                # Regex to find the end of intr_vector_table function
 
 JUMP_TEMPLATE = "\tla  a7,{}\n\tecall\n"                                           # Template to substitute jump code
 RET_TEMPLATE = "\tmv  s0,{}\n\tmv  a7,{}\n\taddi\ta7,a7,1\n\tecall\n\tmv  {},s0\n" # Template to substitute return code
 MV_TEMPLATE = "\tmv  {},{}\n"                                                      # Template to store function parameters
+OPEN_STACK_TEMPLATE = "\taddi\tsp,sp,{}\n"
+ADDITIONAL_SW_TEMPLATE = "\tsw  s0,{}(sp)\n"
 
 # List of standard C functions
 STD_C_FUNCS = set(["memset", "memcpy", "memmove", "scanf", "memcmp", "strcpy", "strncpy", "strcmp", "strncmp", 
@@ -45,6 +50,62 @@ def is_leaf(function_name, files):
                     return False                        ### maybe fot std function this is still considered a leaf ###
     leaf_functions.add(function_name) 
     return True                                         # If no calls found, assume the function is a leaf
+
+def instrument_vector_table():
+    with open("intr_vector_table.s", 'r') as f:
+        lines = f.readlines()
+
+    target_pattern = r'^[ \t]*synchronous_exception_handler\s*:\s*$'  # Regex to find the start of the desired function
+    new_lines = []
+    sw_instructions = []
+    function_found = False
+    sw_found = True
+    for line in lines:
+        if re.search(target_pattern, line):  # If there is a match for the target, set found to true
+            function_found = True
+            new_lines.append(line) 
+            continue
+
+        if function_found:
+            ####################################
+            # CHECK FOR AMOUNT OF STACK OPENED #
+            ####################################
+            stack_match = re.search(STACK_OPENING_PATTERN, line)
+            if stack_match:                                              # If we match the opening of the stack
+                value = int(stack_match.group(1))                        # Store the value by which the stack is opened
+                new_operation = OPEN_STACK_TEMPLATE.format(value - 28)
+                sw_instructions.append(new_operation)
+                new_lines.append(new_operation) # Substitute the value with an updated one
+                continue
+
+            ###################################
+            # CHECK FOR STORE WORD OPERATIONS #
+            ###################################
+            sw_match = re.search(SW_PATTERN, line)
+            if sw_match and sw_found:                                  # If we match the use of a store word operation
+                sw_instructions.append(line)                           # Store it and continue                        
+            else:                                                      # As soon as we do not find other sw operations
+                sw_found = False
+                for i in range(value, value - 28, -4):  
+                    new_lines.append(ADDITIONAL_SW_TEMPLATE.format(i)) # Add new store word operations for the s registers
+
+            #############################
+            # CHECK FOR END OF FUNCTION #
+            #############################
+            end_match = re.search(CSRS_PATTERN, line)
+            if end_match:                                                     # If we match the end of the function
+                function_found = False        
+                for sw_instruction in reversed(sw_instructions):          
+                    instruction = sw_instruction.replace('sw', 'lw')          # Replace 'sw' with 'lw'
+                    new_lines.append(instruction)                             # Add all the load word instruction in reverse order
+
+                new_lines.append(OPEN_STACK_TEMPLATE.format(abs(value - 28))) # Close the stack 
+
+        new_lines.append(line) 
+
+    # Write new lines
+    with open("intr_vector_table.s", 'w') as f:
+        f.writelines(new_lines)
 
 def instrument(assembly_files):
     print("Instrumenting files...\n")
@@ -112,6 +173,7 @@ def instrument(assembly_files):
         with open(assembly_file, 'w') as f:
             f.writelines(new_lines)
         print(f"File {os.path.basename(assembly_file)} had {replaced_jump} jump instruction(s) and {replaced_return} return instruction(s)\n")
+    instrument_vector_table()
 
 def main():
     if len(sys.argv) < 2:
