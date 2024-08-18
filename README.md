@@ -5,7 +5,7 @@ The project provides secure U-mode code execution and performs controls on retur
 
 Return instructions are checked thanks to a shadow stack.
 
-Note that this project has been developed on _Espressif's [ESP32-C3-DevKitM-1]_(https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32c3/esp32-c3-devkitm-1/index.html). Thus, it uses _Espressif's utils_ to flash the exxecutable.
+Note that this project has been developed on _Espressif's_ [_ESP32-C3-DevKitM-1_](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32c3/esp32-c3-devkitm-1/index.html). Thus, it uses _Espressif's utils_ to flash the exxecutable.
 
 ## Installation
 
