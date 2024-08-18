@@ -5,7 +5,7 @@ The project provides secure U-mode code execution and performs controls on retur
 
 Return instructions are checked thanks to a shadow stack.
 
-Note that this project has been developed on _Espressif's_ [_ESP32-C3-DevKitM-1_](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32c3/esp32-c3-devkitm-1/index.html). Thus, it uses _Espressif's utils_ to flash the exxecutable.
+Note that this project has been developed on _Espressif's_ [_ESP32-C3-DevKitM-1_](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32c3/esp32-c3-devkitm-1/index.html). Thus, it uses _Espressif's utils_ to flash the executable.
 
 ## Installation
 
@@ -33,7 +33,7 @@ export ARCH=esp32c3
 export PORT=/dev/ttyUSB0
 ```
 
-### HOW TO RUN WITH MAKE
+#### HOW TO RUN WITH MAKE
 
 Build and run:
 ```
@@ -57,24 +57,25 @@ Install [_Python_](https://www.python.org/downloads/).
 Install the [_riscv-none-elf toolchain_](https://github.com/xpack-dev-tools/riscv-none-elf-gcc-xpack). 
 Other toolchains may be used but must be configured in the _flasher.py_ file and added to the _PATH_.
 
-### HOW TO RUN WITH PYTHON
+#### HOW TO RUN WITH PYTHON
 
 Use the file _flasher.py_ inside toolsExtra/ to build, instrument and run the code:
 ```
 python3 flasher.py [output file name] [operation]
 ```
-where the operation can be:
-- build: to build the source code and create the .bin, .elf and .s files
-- run: to build and flash the executable on the board
-- secure-build: to instrument the code and create the .bin, .elf and .s files
-- secure-run: to build and flash the instrumented executable on the board
-- clear: to delete .bin, .elf, .s and .log files
 
-Note that the file instrumenter.py can be used:
-- through the flasher.py script with secure-build and secure-run commands
-- manually by providing the assembly files as input (create the assembly files manually, instrument them with instrumenter.py and finish assembly and linking manually)
+Where the operation can be:
+- **build**: to build the source code and create the _.bin_, _.elf_ and _.s_ files
+- **run**: to build and flash the executable on the board
+- **secure-build**: to instrument the code and create the _.bin_, _.elf_ and _.s_ files
+- **secure-run**: to build and flash the instrumented executable on the board
+- **clear**: to delete _.bin_, _.elf_, _.s_ and _.log_ files
 
-To use the instumenter file withut the flasher run:
+Note that the file _instrumenter.py_ can be used:
+- Through the _flasher.py_ script with **secure-build** and **secure-run** commands
+- Manually by providing the assembly files as input (create the assembly files manually, instrument them with _instrumenter.py_ and finish assembly and linking manually)
+
+To use _instumenter.py_ withut _flasher.py_ run:
 ```
 python3 instrumenter.py [file1.s] [file2.s] ... [fileN.s]
 ```
