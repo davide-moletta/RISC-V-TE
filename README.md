@@ -1,9 +1,7 @@
 # RISC-V-TE
 
 This project aims at implementing **Control Flow Integrity** for bare-metal **RISC-V** based micro-controller (project based on the bare-metal infrastructure provided by [Sergey Lyubka](https://github.com/cpq/mdk/tree/main)).
-The project provides secure U-mode code execution and performs controls on return instructions.
-
-Return instructions are checked thanks to a shadow stack.
+The project provides secure U-mode code execution and performs controls on return instructions thanks to a shadow stack.
 
 Note that this project has been developed on _Espressif's_ [_ESP32-C3-DevKitM-1_](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32c3/esp32-c3-devkitm-1/index.html). Thus, it uses _Espressif's utils_ to flash the executable.
 
@@ -55,7 +53,7 @@ make -C path/to/RISC-V-TE/src/shadowstack clean
 Install [_Python_](https://www.python.org/downloads/).
 
 Install the [_riscv-none-elf toolchain_](https://github.com/xpack-dev-tools/riscv-none-elf-gcc-xpack). 
-Other toolchains may be used but must be configured in the _flasher.py_ file and added to the _PATH_.
+Other toolchains may be used but must be configured in the _flasher.py_ file and added to the _$PATH_.
 
 #### HOW TO RUN WITH PYTHON
 
