@@ -58,13 +58,11 @@ void user_code()
     // push(&shadow_stack, 10);
     // printf("pushed %d\n", pop(&shadow_stack));
 
-    int first_num, second_num, operation;
-
-    scanf("%d %d %d", &first_num, &second_num, &operation);
-
+    int first_num = 10;
+    int second_num = 20;
     int (*funPtr)(int, int);
 
-    switch (operation)
+    switch (1)
     {
     case 1:
         printf("Summing %d and %d\n", first_num, second_num);
@@ -85,7 +83,7 @@ void user_code()
         funPtr(first_num, second_num);
         break;
     default:
-        printf("Wrong operation\n");
+        printf("Something went wrong\n");
         break;
     }
 }
