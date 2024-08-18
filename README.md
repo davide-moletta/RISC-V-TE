@@ -1,19 +1,13 @@
 # RISC-V-TE
 
-This project aims at implementing Control Flow Integrity for bare-metal RISC-V based micro-controller (project based on the bare-metal infrastructure provided by [Sergey Lyubka](https://github.com/cpq/mdk/tree/main)).
-The project provides secure U-mode code execution and performs controls on both return and jump instructions.
+This project aims at implementing **Control Flow Integrity** for bare-metal **RISC-V** based micro-controller (project based on the bare-metal infrastructure provided by [Sergey Lyubka](https://github.com/cpq/mdk/tree/main)).
+The project provides secure U-mode code execution and performs controls on return instructions.
 
 Return instructions are checked thanks to a shadow stack.
-Jump instructions are checked thanks to the Control Flow Graph.
 
-Note that this project has been developed on Espressif's [ESP32-C3-DevKitM-1](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32c3/esp32-c3-devkitm-1/index.html). Thus, it uses Espressif's utils to flash the exxecutable on the board.
+Note that this project has been developed on _Espressif's [ESP32-C3-DevKitM-1]_(https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32c3/esp32-c3-devkitm-1/index.html). Thus, it uses _Espressif's utils_ to flash the exxecutable.
 
-## Requirements
-
-This project requires the [riscv-none-elf toolchain](https://github.com/xpack-dev-tools/riscv-none-elf-gcc-xpack) to work. 
-Other toolchains may be used but must be configured either in the python flasher or in the Makefile.
-
-## How to run
+## Installation
 
 Clone the repository:
 
@@ -21,22 +15,51 @@ Clone the repository:
 git clone https://github.com/davide-moletta/RISC-V-TE.git
 ```
 
+Depending on which running method (_MAKE_ or _Python_) you whish to use follow the relative instructions.
+
+### MAKE REQUIREMENTS
+
+Install _make_:
+```
+sudo apt install make
+```
+
+Install [_Docker_](https://docs.docker.com/engine/install/ubuntu/).
+
+Run the following commands:
+```
+export MDK=/path/to/RISC-V-TE
+export ARCH=esp32c3
+export PORT=/dev/ttyUSB0
+```
+
+### HOW TO RUN WITH MAKE
+
 Build and run:
 ```
-make -C .../RISC-V-TE/src/shadowstack clean build flash monitor
+make -C path/to/RISC-V-TE/src/shadowstack clean build flash monitor
 ```
 
 Build:
 ```
-make -C .../RISC-V-TE/src/shadowstack clean build
+make -C path/to/RISC-V-TE/src/shadowstack clean build
 ```
 
 Clean binaries and dumps:
 ```
-make -C .../RISC-V-TE/src/shadowstack clean
+make -C path/to/RISC-V-TE/src/shadowstack clean
 ```
 
-Optionally it's possible to use the python flasher inside toolExtra/:
+### PYTHON REQUIREMENTS
+
+Install [_Python_](https://www.python.org/downloads/).
+
+Install the [_riscv-none-elf toolchain_](https://github.com/xpack-dev-tools/riscv-none-elf-gcc-xpack). 
+Other toolchains may be used but must be configured in the _flasher.py_ file and added to the _PATH_.
+
+### HOW TO RUN WITH PYTHON
+
+Use the file _flasher.py_ inside toolsExtra/ to build, instrument and run the code:
 ```
 python3 flasher.py [output file name] [operation]
 ```
