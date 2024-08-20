@@ -1,4 +1,4 @@
-import sys, re, os
+import sys, re, os, glob
 
 DIR_JUMP_PATTERN = r'\b(call)\b\s+(\w+)'                                                          # Regex to find direct jump instructions
 UNDIR_JUMP_PATTERN = r'\b(jalr)\b\s+(\w+)'                                                        # Regex to find indirect jump instructions
@@ -28,26 +28,27 @@ STD_C_FUNCS = set(["memset", "memcpy", "memmove", "scanf", "memcmp", "strcpy", "
 leaf_functions = set()
 
 # Check if target function is a leaf
-def is_leaf(function_name, files):
+def is_leaf(function_name):
     print(f"Checking function {function_name} ...")
     target_pattern = rf'^[ \t]*{function_name}\s*:\s*$'  # Regex to find the start of the desired function
 
-    for file in files:  # For each file, read its content and check
-        with open(file, 'r') as f:
-            lines = f.readlines()
+    for filename in os.listdir("."): # For each file, read its content and check
+        if filename.endswith('.s') and filename != "boot.s" and filename != "main.s":
+            with open(filename, 'r') as f:
+                lines = f.readlines()
 
-        function_found = False
-        for line in lines:
-            if re.search(target_pattern, line):  # If there is a match for the target, set found to true
-                function_found = True
-                continue  # Continue checking next lines
+            function_found = False
+            for line in lines:
+                if re.search(target_pattern, line):  # If there is a match for the target, set found to true
+                    function_found = True
+                    continue  # Continue checking next lines
 
-            if function_found:
-                if re.search(FUNC_START_PATTERN, line): # If we match the start of a new function the target function is a leaf
-                    leaf_functions.add(function_name)   # Add the function name to the list of leaf functions
-                    return True                          
-                if re.search(DIR_JUMP_PATTERN, line):   # If we match a jump instruction the target function is not a leaf
-                    return False                        ### maybe fot std function this is still considered a leaf ###
+                if function_found:
+                    if re.search(FUNC_START_PATTERN, line): # If we match the start of a new function the target function is a leaf
+                        leaf_functions.add(function_name)   # Add the function name to the list of leaf functions
+                        return True                          
+                    if re.search(DIR_JUMP_PATTERN, line):   # If we match a jump instruction the target function is not a leaf
+                        return False                        ### maybe fot std function this is still considered a leaf ###
     leaf_functions.add(function_name) 
     return True                                         # If no calls found, assume the function is a leaf
 
@@ -139,20 +140,20 @@ def instrument(assembly_files):
                 # CHECK FOR JUMP INSTRUCTION #
                 ##############################
                 jump_match = re.search(DIR_JUMP_PATTERN, line) 
-                if jump_match:                                                          # If we match a jump instruction
-                    instr, label = jump_match.groups()                                  # Get the instruction and the label
-                    if label not in STD_C_FUNCS and not is_leaf(label, assembly_files): # Check if target function is a leaf or a std C function. If it is, skip
-                        for reg, used in registers_used.items():                        # Add mv instructions for used registers before ecall
+                if jump_match:                                                # If we match a jump instruction
+                    instr, label = jump_match.groups()                        # Get the instruction and the label
+                    if label not in STD_C_FUNCS and not is_leaf(label):       # Check if target function is a leaf or a std C function. If it is, skip
+                        for reg, used in registers_used.items():              # Add mv instructions for used registers before ecall
                             if used:
-                                sx = reg.replace('a', 's')                              # Replace 'a' with 's' to create sx (e.g. if a0 is used, s0 will be used)
-                                new_lines.append(MV_TEMPLATE.format(sx, reg))           # Append mv sx,ax
+                                sx = reg.replace('a', 's')                    # Replace 'a' with 's' to create sx (e.g. if a0 is used, s0 will be used)
+                                new_lines.append(MV_TEMPLATE.format(sx, reg)) # Append mv sx,ax
 
-                        new_lines.append(JUMP_TEMPLATE.format(label))                   # If the function is neither a leaf nor a std func replace the instruction
+                        new_lines.append(JUMP_TEMPLATE.format(label))         # If the function is neither a leaf nor a std func replace the instruction
                         
-                        for reg, used in registers_used.items():                        # Add mv instructions for used registers after ecall
+                        for reg, used in registers_used.items():              # Add mv instructions for used registers after ecall
                             if used:
-                                sx = reg.replace('a', 's')                              # Replace 'a' with 's' to create sx (e.g. if a0 is used, s0 will be used)
-                                new_lines.append(MV_TEMPLATE.format(reg, sx))           # Append mv ax,sx
+                                sx = reg.replace('a', 's')                    # Replace 'a' with 's' to create sx (e.g. if a0 is used, s0 will be used)
+                                new_lines.append(MV_TEMPLATE.format(reg, sx)) # Append mv ax,sx
 
                         replaced_jump += 1
 

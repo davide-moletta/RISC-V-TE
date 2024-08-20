@@ -1,14 +1,15 @@
-# Ignore binaries and assembly dump files
-src/shadowstack/firmware.*
+# Ignore MAKE output files
+src/shadowstack/*.bin
+src/shadowstack/*.elf
 dump.asm
 
-# Ignore miscellaneous files
-TODO
-.vscode
-
-# Ignore toolsExtra output files
+# Ignore flasher.py output files
 toolsExtra/*.bin
 toolsExtra/*.elf
 toolsExtra/logs.log
 toolsExtra/*.s
 toolsExtra/__pycache__
+
+# Ignore miscellaneous files
+TODO
+.vscode
