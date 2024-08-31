@@ -195,8 +195,8 @@ void synchronous_exception_handler(void)
     // NOTE: this is needed only because the compiler sees this as a normal function so it stores the context and opens sp
     // but we return with mret so the compiler never restores the context, thus sp remains open and nothing works
     // the next two lines are not needed otherwise
-    asm("lw	ra,12(sp)");
-    asm("addi	sp,sp,16");
+    // asm("lw	ra,12(sp)");
+    // asm("addi	sp,sp,16");
 
     // Adjust the mepc to point to the next instruction after ecall
     asm("csrr t0, mepc");
