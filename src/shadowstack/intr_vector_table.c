@@ -288,7 +288,7 @@ void esr_handler_U_mode_ecall(unsigned int ecode_address_encoding, unsigned int 
             printf("\t[ESR - U Mode Ecall]:\tStack is full not able to store address, terminating execution ...\n");
             code_termination();
         } 
-        printf("\t[ESR - U Mode Ecall]:\tReturn address stored correctly ...\n");
+        printf("\t[ESR - U Mode Ecall]:\tReturn address %x stored correctly ...\n", address_to_store);
     }
     else if ((ecode_address_encoding % 2) != 0) // If the address is odd, we remove 1 and check for return
     {
@@ -298,9 +298,8 @@ void esr_handler_U_mode_ecall(unsigned int ecode_address_encoding, unsigned int 
             SHADOW STACK CHECK 
                 destination address and popped address must be equal
         */
-        ecode_address_encoding = ecode_address_encoding - 1;
         unsigned int stored_address = pop(&shadow_stack);
-        if (stored_address == 0 || stored_address != ecode_address_encoding)
+        if (stored_address == 0 || stored_address != ecode_address_encoding - 1)
         {
             printf("\t[ESR - U Mode Ecall]:\tWrong return address or empty stack, terminating execution ...\n");
             code_termination();

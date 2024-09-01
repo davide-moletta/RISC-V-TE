@@ -1,4 +1,9 @@
-import sys, subprocess, os, shlex, instrumenter
+import sys
+import subprocess
+import os
+import shlex
+import instrumenter
+from pathlib import Path
 
 #############
 # CONSTANTS #
@@ -19,34 +24,33 @@ ESPUTIL = f"{DIRECTORY}/esputil/esputil" # Espressif utils to flash to the board
 FLASH_ADDR = 0                           # Flash starting address
 
 # Function to run a command
-def run_command(command, capture_output=False):
+def run_command(command, capture_output=False, output_file=None):
     command_list = shlex.split(command)
-    if(capture_output):
-        with open(f"{DIRECTORY}/toolsExtra/{OUTPUT}.s", "w") as output_file:
+    try:
+        with (output_file.open("w") if output_file else open(os.devnull, "w")) as output_file:
             with open(f"{DIRECTORY}/toolsExtra/logs.log", "a") as error_file:
-                subprocess.run(command_list, stdout=output_file, stderr=error_file, check=True)
-    else:
-        try:
-            with open(f"{DIRECTORY}/toolsExtra/logs.log", "a") as error_file:
-                subprocess.run(command_list, stderr=error_file, check=True)
-        except KeyboardInterrupt:
-            sys.exit(0)    
+                subprocess.run(command_list, stdout=output_file if capture_output else None, stderr=error_file, check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Error: Command '{command}' failed with error: {e}")
+        sys.exit(1)
+    except KeyboardInterrupt:
+        sys.exit(0)    
 
 # Function to clear files before creating new ones
 def clear():
     print("Clearing files...")
-    files_to_delete = " ".join([f"{DIRECTORY}/toolsExtra/{file}" for file in os.listdir(f"{DIRECTORY}/toolsExtra") 
-         if file.endswith(('.bin', '.elf', '.s', ".log"))])
-    if files_to_delete:
-        run_command(f"rm {files_to_delete}", capture_output=False)
+    tools_extra_dir = Path(f"{DIRECTORY}/toolsExtra")
+    files_to_delete = [f for f in tools_extra_dir.glob("*") if f.suffix in {".bin", ".elf", ".s", ".log"}]
+    for file in files_to_delete:
+        file.unlink()
 
 # Function to flash and monitor the application
-def flash():
-    run_command(f"{ESPUTIL} flash {FLASH_ADDR} {OUTPUT}.bin", capture_output=False) # Flash the executable onto the board
-    run_command(f"{ESPUTIL} monitor", capture_output=False)                         # Monitor the application to see I/O
+def flash(output_name):
+    run_command(f"{ESPUTIL} flash {FLASH_ADDR} {output_name}.bin") # Flash the executable onto the board
+    run_command(f"{ESPUTIL} monitor")                         # Monitor the application to see I/O
 
 # Function to build the executable
-def build():
+def build(output_name):
     clear() # Clear files
 
     # Retrieve user imported source files
@@ -54,18 +58,18 @@ def build():
     extra_sources = " ".join([f"{SOURCES_DIRECTORY}/usercode/{file}" for file in os.listdir(f"{SOURCES_DIRECTORY}/usercode") if file.endswith(".c")])
 
     print("Creating .elf file...")
-    run_command(f"{TOOLCHAIN}-gcc {CFLAGS} {SOURCES} {extra_sources} {LINKFLAGS} -o {OUTPUT}.elf", capture_output=False) # Creates .elf file
+    run_command(f"{TOOLCHAIN}-gcc {CFLAGS} {SOURCES} {extra_sources} {LINKFLAGS} -o {output_name}.elf") # Creates .elf file
 
     print("Creating .bin file...")
-    run_command(f"{ESPUTIL} mkbin {OUTPUT}.elf {OUTPUT}.bin", capture_output=False) # Creates .bin file
+    run_command(f"{ESPUTIL} mkbin {output_name}.elf {output_name}.bin") # Creates .bin file
 
     print("Creating .s file...")
-    run_command(f"{TOOLCHAIN}-objdump -D {OUTPUT}.elf", capture_output=True) # Creates .s file (for inspections)
+    run_command(f"{TOOLCHAIN}-objdump -D {output_name}.elf", capture_output=True, output_file=Path(f"{DIRECTORY}/toolsExtra/{output_name}.s")) # Creates .s file (for inspections)
 
     print("Files built successfully")
 
 # Function to instrument and build the executable
-def secure_build():
+def secure_build(output_name):
     clear() # Clear files
 
     print("Retrieving user source files...")
@@ -76,73 +80,65 @@ def secure_build():
     files_to_instrument = [source.replace("src/shadowstack/usercode/", "toolsExtra/").replace(".c", ".s") for source in extra_sources.split()]
     
     print("Creating individual assembly files...")
-    run_command(f"{TOOLCHAIN}-gcc -S {CFLAGS} {SOURCES} {extra_sources}", capture_output=False) # Creates individual assembly files
+    run_command(f"{TOOLCHAIN}-gcc -S {CFLAGS} {SOURCES} {extra_sources}") # Creates individual assembly files
 
-    # Instrument code here
-    instrumenter.instrument(files_to_instrument) # Instrument the files
+    # Instrument the files
+    print("Instrumenting code...")
+    instrumenter.instrument(files_to_instrument) 
 
     # Retrieve all assembly files to be assembled and linked
     all_assembly_files = " ".join([f"{DIRECTORY}/toolsExtra/{file}" for file in os.listdir(f"{DIRECTORY}/toolsExtra") if file.endswith(".s")])
   
     print("Creating .elf file...")
-    run_command(f"{TOOLCHAIN}-gcc {all_assembly_files} {LINKFLAGS} -o {OUTPUT}.elf", capture_output=False) # Creates .elf file
+    run_command(f"{TOOLCHAIN}-gcc {all_assembly_files} {LINKFLAGS} -o {output_name}.elf") # Creates .elf file
 
     print("Creating .bin file...")
-    run_command(f"{ESPUTIL} mkbin {OUTPUT}.elf {OUTPUT}.bin", capture_output=False) # Creates .bin file
+    run_command(f"{ESPUTIL} mkbin {output_name}.elf {output_name}.bin") # Creates .bin file
 
     print("Creating .s file...")
-    run_command(f"{TOOLCHAIN}-objdump -D {OUTPUT}.elf", capture_output=True) # Creates .s file (for inspections)
+    run_command(f"{TOOLCHAIN}-objdump -D {output_name}.elf", capture_output=True, output_file=Path(f"{DIRECTORY}/toolsExtra/{output_name}.s")) # Creates .s file (for inspections)
 
     # print("Clearing assembly files...")
-    # run_command(f"rm {all_assembly_files}", capture_output=False) # Removes assembly files
+    # run_command(f"rm {all_assembly_files}") # Removes assembly files
 
     print("Files instrumented and built successfully")
 
-def main():
-    if (len(sys.argv) < 2 or "help" in sys.argv or "-help" in sys.argv or "--help" in sys.argv or "h" in sys.argv or "-h" in sys.argv or "--h" in sys.argv): 
-        print("This file is used to compile, instrument and run the code.\n"
-              "Input parameters should be provided in the following order.\n"
-              "python3 flasher.py:\n"
-              "\t[output file name]: The name of the resulting .bin and .elf files\n"
-              "\t[build | run | secure-build | secure-run | clear]:\n"
-              "\t\t- build just builds all the files and creates the .bin and .elf files\n"
-              "\t\t- run builds and run all the files without instrumentation\n"
-              "\t\t- secure-build instruments the code and creates the .bin and .elf files\n"
-              "\t\t- secure-run instruments the code, then builds and run it\n"
-              "\t\t- clear deletes the files (.elf, .bin, .s, .log)")
-        sys.exit(1)
 
-    command = sys.argv[1]
-    if command != "clear" and len(sys.argv) < 3:
-        print("Error: Not enough parameters provided for the selected command.\n"
-              "Use 'clear' without additional parameters, or specify an output file name and command.")
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] in {"help", "-help", "--help", "h", "-h", "--h"}:
+        print("Usage: python3 flasher.py [output file name] [build | run | secure-build | secure-run | clear (no need for output file name)]")
         sys.exit(1)
     
-    global OUTPUT
+    command = sys.argv[1]
+    
     if command == "clear":
-        OUTPUT = None
+        clear()
+        sys.exit(0)
+    
+    if len(sys.argv) < 3:
+        print("Error: Missing parameters. Provide an output file name and a command")
+        sys.exit(1)
+    
+    output_name = sys.argv[1]
+    command = sys.argv[2]
+
+    if command == "build":
+        build(output_name)
+    elif command == "run":
+        build(output_name)
+        print("Flashing the program...")
+        flash(output_name)
+    elif command == "secure-build":
+        secure_build(output_name)
+    elif command == "secure-run":
+        secure_build(output_name)
+        print("Flashing the instrumented program...")
+        flash(output_name)
+    elif command == "clear":
+        clear()
     else:
-        OUTPUT = sys.argv[1]
-
-
-    match sys.argv[2] if command != "clear" else "clear":        
-        case "build":
-            build()
-        case "run":
-            build()
-            print("Flashing the program...")
-            flash()
-        case "secure-build":
-            secure_build()
-        case "secure-run":
-            secure_build()
-            print("Flashing the instrumented program...")
-            flash()
-        case "clear":
-            clear()
-        case _:
-            print("The specified operation does not exists correct\n")
-            sys.exit(1)
+        print("Error: Invalid operation specified.")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

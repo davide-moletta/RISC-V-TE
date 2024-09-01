@@ -34,8 +34,8 @@ int sum(int a, int b)
 
     printf("Result of sum is: %d\nMultiplying %d and %d\n", sum_result, a, b);
 
-    int mul_result = multiplication(a, b);
-    printf("Result of mul is %d\n", mul_result);
+    // int mul_result = multiplication(a, b);
+    // printf("Result of mul is %d\n", mul_result);
 
     // Since sum is not a leaf we must check its return address
     // asm("lw a7, 12(sp)");  // Load return address from stack
@@ -86,4 +86,6 @@ void user_code()
         printf("Something went wrong\n");
         break;
     }
+
+    printf("Finished operations\n");
 }

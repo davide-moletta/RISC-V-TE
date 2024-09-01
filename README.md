@@ -77,3 +77,14 @@ To use _instumenter.py_ withut _flasher.py_ run:
 ```
 python3 instrumenter.py [file1.s] [file2.s] ... [fileN.s]
 ```
+
+## TROUBLESHOOTING
+
+If you encounter problems when running the code and the file logs.s states:
+```
+open(/dev/ttyUSB0): -1 (Permission denied)
+```
+open up a terminal and run the following command:
+```
+sudo chmod a+rw /dev/ttyUSB0
+```
