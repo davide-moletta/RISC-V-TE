@@ -292,13 +292,14 @@ void esr_handler_U_mode_ecall(unsigned int ecode_address_encoding, unsigned int 
     }
     else if ((ecode_address_encoding % 2) != 0) // If the address is odd, we remove 1 and check for return
     {
-        printf("\t[ESR - U Mode Ecall]:\tReturn check requested for %x and mepc: %x\n", ecode_address_encoding, mepc);
+        
 
         /*
             SHADOW STACK CHECK 
                 destination address and popped address must be equal
         */
         unsigned int stored_address = pop(&shadow_stack);
+        printf("\t[ESR - U Mode Ecall]:\tReturn check requested for %x, mepc: %x and popped value: %x\n", ecode_address_encoding, mepc, stored_address);
         if (stored_address == 0 || stored_address != ecode_address_encoding - 1)
         {
             printf("\t[ESR - U Mode Ecall]:\tWrong return address or empty stack, terminating execution ...\n");

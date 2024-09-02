@@ -88,3 +88,15 @@ open up a terminal and run the following command:
 ```
 sudo chmod a+rw /dev/ttyUSB0
 ```
+
+Note that this command must be runned at each reboot of your computer.
+If you wish to avoid doing so you must add your user to the _dialout_ and _plugdev_ groups.
+To do so run the following commands:
+```
+sudo usermod -a -G dialout $USER
+sudo usermod -a -G plugdev $USER
+```
+after that, either log out and log in or run:
+```
+sudo service udev restart
+```

@@ -15,7 +15,7 @@ PATTERNS = {
 }
 
 TEMPLATES = {
-    "JUMP": "\tla  a7,{}\n\tecall\n",                                           # Template to substitute jump code
+    "JUMP": "\tla  a7,{}\n\tli a6,{}\n\tecall\n",                                           # Template to substitute jump code
     "RET": "\tmv  s0,{}\n\tmv  a7,{}\n\taddi\ta7,a7,1\n\tecall\n\tmv  {},s0\n", # Template to substitute return code
     "MV": "\tmv  {},{}\n",                                                      # Template to store function parameters
     "OPEN_STACK": "\taddi\tsp,sp,{}\n",                                         # Template to open the stack
@@ -163,7 +163,9 @@ def instrument(assembly_files):
                                 sx = reg.replace('a', 's')                         # Replace 'a' with 's' to create sx (e.g. if a0 is used, s0 will be used)
                                 new_lines.append(TEMPLATES["MV"].format(sx, reg))  # Append mv sx,ax
 
-                        new_lines.append(TEMPLATES["JUMP"].format(label))          # If the function is neither a leaf nor a std func replace the instruction
+                        register_number = sum(v for v in registers_used.values())  # Get the number of used registers
+                        print(register_number)
+                        new_lines.append(TEMPLATES["JUMP"].format(label, register_number)) # If the function is neither a leaf nor a std func replace the instruction
                        
                         for reg, used in registers_used.items():                   # Add mv instructions for used registers after ecall
                             if used:
