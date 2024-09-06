@@ -3,6 +3,10 @@ src/shadowstack/*.bin
 src/shadowstack/*.elf
 dump.asm
 
+# Ignore user code
+src/shadowstack/usercode/user_code.c
+src/shadowstack/usercode/user_code.h
+
 # Ignore flasher.py output files
 toolsExtra/*.bin
 toolsExtra/*.elf
@@ -13,3 +17,4 @@ toolsExtra/__pycache__
 # Ignore miscellaneous files
 TODO
 .vscode
+old_instrumenter.py

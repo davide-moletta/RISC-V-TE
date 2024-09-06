@@ -27,7 +27,7 @@ void esr_handler_load_addr_mis(void)   __attribute__((section(".intr_service_rou
 void esr_handler_load_acc_fault(void)  __attribute__((section(".intr_service_routines")));
 void esr_handler_AMO_addr_mis(void)    __attribute__((section(".intr_service_routines")));
 void esr_handler_AMO_acc_fault(void)   __attribute__((section(".intr_service_routines")));
-void esr_handler_U_mode_ecall(unsigned int ecode_address_encoding, unsigned int param_number, unsigned int mepc) __attribute__((section(".intr_service_routines")));
+void esr_handler_U_mode_ecall(unsigned int ecode_address_encoding, unsigned int mepc) __attribute__((section(".intr_service_routines")));
 void esr_handler_S_mode_ecall(void)     __attribute__((section(".intr_service_routines")));
 void esr_handler_M_mode_ecall(void)     __attribute__((section(".intr_service_routines")));
 void esr_handler_instr_page_fault(void) __attribute__((section(".intr_service_routines")));
@@ -116,11 +116,10 @@ void synchronous_exception_handler(void)
     // Disable user-level interrupts by clearing the UIE bit in mstatus CSR
     asm volatile("csrc mstatus, %0" :: "r"(1 << 0));
 
-    unsigned int mcause, mepc, a7, a6;
+    unsigned int mcause, mepc, a7;
     asm volatile("csrr %0, mcause" : "=r"(mcause)); // Load mcause to inspect the cause of the trap
     asm volatile("csrr %0, mepc" : "=r"(mepc));     // Load mepc to retrieve the ecall address
     asm volatile("add %0, a7, x0" : "=r"(a7));      // Load a7 which contains the addition address and ecall encoded code
-    asm volatile("add %0, a6, x0" : "=r"(a6));      // Load a6 which contains the number of parameters (not needed when instrumented)
 
     // Check the MSB (bit 31) of the mcause register
     if (mcause & 0x80000000)
@@ -161,7 +160,7 @@ void synchronous_exception_handler(void)
     }
     else if ((mcause & 0xFF) == 8) // Check if it's an Environment call from U-mode
     {
-        esr_handler_U_mode_ecall(a7, a6, mepc);
+        esr_handler_U_mode_ecall(a7, mepc);
     }
     else if ((mcause & 0xFF) == 9) // Check if it's an Environment call from S-mode
     {
@@ -246,17 +245,13 @@ void esr_handler_AMO_acc_fault(void)
 /*
     CUSTOM ECALL CODES
 
-    Ecall code (a7) | a6                    | Description
-            1       | -                     | Used to terminate the execution
-         address    | number of parameters  | Used to check jump instruction
-        address + 1 | -                     | Used to check return instruction
+    Ecall code (a7) | Description
+            1       | Used to terminate the execution
+         address    | Used to check jump instruction
+        address + 1 | Used to check return instruction
 
     To check jump instruction:
-        - mepc
-        - jump destination
-        - CFG entry (if exists)
-
-        - If allowed store return address (mepc + 6) in shadow stack
+        - Store return address (mepc + 6) in shadow stack
 
     To check return instruction:
         - return address (ra)
@@ -266,7 +261,7 @@ void esr_handler_AMO_acc_fault(void)
         - If allowed do nothing since value already popped
 
 */
-void esr_handler_U_mode_ecall(unsigned int ecode_address_encoding, unsigned int param_number, unsigned int mepc)
+void esr_handler_U_mode_ecall(unsigned int ecode_address_encoding, unsigned int mepc)
 {
     if (ecode_address_encoding == 1)
     {
@@ -275,31 +270,28 @@ void esr_handler_U_mode_ecall(unsigned int ecode_address_encoding, unsigned int 
     }
     else if ((ecode_address_encoding % 2) == 0) // If the address is even we check for jump
     {
-        printf("\t[ESR - U Mode Ecall]:\tJump check requested for %x and mepc: %x\n", ecode_address_encoding, mepc);
         /*
-            CFI CHECK
-                mepc + 4 and destination address must be legal
+            CFI CHECK: mepc + 4 and destination address must be legal
 
-            IF ALLOWED PUSH mepc + 4 (ecall) + 2 (jump instruction) + 2 * number of parameters (2 for each load) to shadow stack
+            IF ALLOWED PUSH mepc + 4 (ecall) + 2 (jump instruction) to shadow stack
         */
-        unsigned int address_to_store = mepc + 6 + 2 * param_number;
+        printf("\t[ESR - U Mode Ecall]:\tJump check requested for %x and mepc: %x\n", ecode_address_encoding, mepc);
+        unsigned int address_to_store = mepc + 6;
         if(push(&shadow_stack, address_to_store) != 1)
         {  
-            printf("\t[ESR - U Mode Ecall]:\tStack is full not able to store address, terminating execution ...\n");
+            printf("\t[ESR - U Mode Ecall]:\tStack is full, terminating execution ...\n");
             code_termination();
         } 
         printf("\t[ESR - U Mode Ecall]:\tReturn address %x stored correctly ...\n", address_to_store);
     }
     else if ((ecode_address_encoding % 2) != 0) // If the address is odd, we remove 1 and check for return
     {
-        
-
         /*
-            SHADOW STACK CHECK 
-                destination address and popped address must be equal
+            SHADOW STACK CHECK: destination address and popped address must be equal
         */
         unsigned int stored_address = pop(&shadow_stack);
-        printf("\t[ESR - U Mode Ecall]:\tReturn check requested for %x, mepc: %x and popped value: %x\n", ecode_address_encoding, mepc, stored_address);
+        printf("\t[ESR - U Mode Ecall]:\tReturn check requested for %x, mepc: %x and popped value: %x\n", ecode_address_encoding - 1, mepc, stored_address);
+        
         if (stored_address == 0 || stored_address != ecode_address_encoding - 1)
         {
             printf("\t[ESR - U Mode Ecall]:\tWrong return address or empty stack, terminating execution ...\n");
@@ -387,7 +379,6 @@ void isr_reserved(void)
 {
     printf("\t[ISR - Error   Reserved]\n");
 }
-
 
 /*
     Function called to load the address of code termination and stop the execution
