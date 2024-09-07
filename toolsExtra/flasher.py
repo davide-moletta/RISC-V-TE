@@ -47,7 +47,7 @@ def clear():
 # Function to flash and monitor the application
 def flash(output_name):
     run_command(f"{ESPUTIL} flash {FLASH_ADDR} {output_name}.bin") # Flash the executable onto the board
-    run_command(f"{ESPUTIL} monitor")                         # Monitor the application to see I/O
+    run_command(f"{ESPUTIL} monitor")                              # Monitor the application to see I/O
 
 # Function to build the executable
 def build(output_name):
