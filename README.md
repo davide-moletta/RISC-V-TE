@@ -78,7 +78,7 @@ To use _instumenter.py_ withut _flasher.py_ run:
 python3 instrumenter.py [file1.s] [file2.s] ... [fileN.s]
 ```
 
-## Troubleshooting
+### Troubleshooting
 
 If you encounter problems when flashing the code and the file logs.s states:
 ```
@@ -100,3 +100,8 @@ after that, either logout and log in or run:
 ```
 sudo service udev restart
 ```
+
+## Import code
+
+To ensure the correct functioning of the instrumenter import or create your files under the _path/to/RISC-V-TE/src/shadowstack/usercode/_ directory.
+After that, edit the _user\_entry.c_ file to call the first function of your code.
