@@ -113,8 +113,7 @@ void synchronous_exception_handler(void)
         exception code contains the code of what triggered the exception/interrupt
     */
 
-    // Disable user-level interrupts by clearing the UIE bit in mstatus CSR
-    asm volatile("csrc mstatus, %0" :: "r"(1 << 0));
+    asm volatile("csrc mstatus, %0" :: "r"(1 << 0)); // Disable user-level interrupts by clearing the UIE bit in mstatus CSR
 
     unsigned int mcause, mepc, a7;
     asm volatile("csrr %0, mcause" : "=r"(mcause)); // Load mcause to inspect the cause of the trap
@@ -187,12 +186,11 @@ void synchronous_exception_handler(void)
         esr_handler_reserved();
     }
 
-    // Enable user-level interrupts by setting the UIE bit in mstatus CSR
-    asm volatile("csrs mstatus, %0" :: "r"(1 << 0));
+    asm volatile("csrs mstatus, %0" :: "r"(1 << 0)); // Enable user-level interrupts by setting the UIE bit in mstatus CSR
 
     // Restore context
     // NOTE: this is needed only because the compiler sees this as a normal function so it stores the context and opens sp
-    // but we return with mret so the compiler never restores the context, thus sp remains open and nothing works
+    // but we return with mret so the compiler never restores the context, thus sp remains open and the program breaks
     // the next two lines are not needed otherwise
     // asm("lw	ra,12(sp)");
     // asm("addi	sp,sp,16");
@@ -259,13 +257,11 @@ void esr_handler_AMO_acc_fault(void)
         - shadow stack popped value
 
         - If allowed do nothing since value already popped
-
 */
 void esr_handler_U_mode_ecall(unsigned int ecode_address_encoding, unsigned int mepc)
 {
     if (ecode_address_encoding == 1)
     {
-        printf("\t[ESR - U Mode Ecall]:\tTerminating execution ...\n");
         code_termination();
     }
     else if ((ecode_address_encoding % 2) == 0) // If the address is even we check for jump

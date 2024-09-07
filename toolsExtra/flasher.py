@@ -14,7 +14,7 @@ SOURCES_DIRECTORY = f"{DIRECTORY}/src/shadowstack"                     # User fi
 
 TOOLCHAIN = "riscv-none-elf" # Toolchain, can be changed. Must be included in the PATH or specified here
 CFLAGS = (
-    "-W -Wall -Wextra -Werror -Wundef -Wshadow -pedantic -Wdouble-promotion "
+    "-W -Wall -Wextra -Werror -Wundef -Wshadow -pedantic -Wdouble-promotion -ffixed-a7 "
     "-fno-common -Wconversion -march=rv32imc_zicsr -mabi=ilp32 -O1 -ffunction-sections "
     f"-fdata-sections -fno-builtin-printf -I{SOURCES_DIRECTORY} -I{DIRECTORY}/esp32c3") # GCC flags for building
 LINKFLAGS = f"-T{DIRECTORY}/esp32c3/link.ld -nostdlib -nostartfiles -Wl,--gc-sections" # Linker flags

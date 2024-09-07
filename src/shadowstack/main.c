@@ -146,6 +146,6 @@ int main(void)
 
 void terminate_execution(void)
 {
-     printf("Execution terminated, press Ctrl+C to close\n");
+     printf("Execution terminated, press Ctrl+c to close\n");
      while (1);
 }
