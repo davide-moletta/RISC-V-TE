@@ -4,7 +4,8 @@ src/shadowstack/*.elf
 dump.asm
 
 # Ignore user code
-src/shadowstack/usercode/user_code.*
+src/shadowstack/usercode/*.*
+!src/shadowstack/usercode/user_entry.*
 
 # Ignore flasher.py output files
 toolsExtra/*.bin
