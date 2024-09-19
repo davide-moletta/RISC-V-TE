@@ -14,7 +14,11 @@ SECTIONS {
 
   .intr_service_routines :{ KEEP(*(.intr_service_routines)) }  > iram
 
-  .user_code :{ KEEP(*(.user_code)) }  > iram
+  .user_code :{ 
+    _u_code_start = .;
+    KEEP(*(.user_code))
+    _u_code_end = .; 
+    }  > iram
 
   .machine_setup :{ KEEP(*(.machine_setup)) } > iram
   

@@ -14,9 +14,9 @@ PATTERNS = {
 }
 
 TEMPLATES = {
-    "JUMP": "\tla  a7,{}\n\tecall\n",                                           # Template to substitute jump code
+    "JUMP": "\tla  a7,{}\n\tecall\n",                     # Template to substitute jump code
     "RET": "\tadd\ta7,{},1\n\tecall\n\taddi\t{},a7,-1\n", # Template to substitute return code
-    "OPEN_STACK": "\taddi\tsp,sp,{}\n",                                         # Template to open the stack
+    "OPEN_STACK": "\taddi\tsp,sp,{}\n",                   # Template to open the stack
     # Template to save the context
     "SAVE_CONTEXT": """\t{}  ra, 124(sp)\n\t{}  t0, 120(sp)\n\t{}  t1, 116(sp)  
                        \n\t{}  t2, 112(sp)\n\t{}  s0, 108(sp)\n\t{}  s1, 104(sp)
