@@ -1,6 +1,3 @@
-// Copyright (c) 2021 Cesanta
-// All rights reserved
-
 #include "mdk.h"
 
 extern int main(void);
@@ -15,7 +12,7 @@ void *sbrk(int diff) {
   return old;
 }
 
-void _reset(void) {
+void _start(void) {
   s_heap_start = s_brk = &_end, s_heap_end = &_eram;
   for (char *p = &_sbss; p < &_ebss;) *p++ = '\0';
   soc_init();
