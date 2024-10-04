@@ -52,7 +52,7 @@ def is_leaf(function_name: str) -> bool:
     target_pattern = re.compile(rf'^[ \t]*{function_name}\s*:\s*$') # Regex to find the start of the desired function
     
     for filename in Path(".").glob("*.s"):                          # For each file except peculiar ones, read its content and check
-        if filename.name in {"boot.s", "main.s", "intr_vector_table.s", "shadow_stack.s"}:
+        if filename.name in {"boot.s", "main.s", "intr_vector_table.s", "shadow_stack.s", "cfg.s"}:
             continue
         
         with filename.open('r') as f:
@@ -157,7 +157,7 @@ def instrument(assembly_files):
                     replaced_jump += 1
             elif undir_jump_match:
                 instr, label = undir_jump_match.groups()                # Get the instruction and the label
-                #new_lines.append(TEMPLATES["CALL"].format(label)) # Insert the code for the ecall
+                #new_lines.append(TEMPLATES["CALL"].format(label))       # Insert the code for the ecall
                 new_lines.append(TEMPLATES["UNDIR_JUMP"].format(label)) # Insert the code for the ecall
                 replaced_jump += 1
                 undirect_jumps = True                    
