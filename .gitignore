@@ -1,11 +1,11 @@
 # Ignore MAKE output files
-src/shadowstack/*.bin
-src/shadowstack/*.elf
+src/cfi/*.bin
+src/cfi/*.elf
 dump.asm
 
 # Ignore user code
-src/shadowstack/usercode/*.*
-!src/shadowstack/usercode/user_entry.*
+src/cfi/usercode/*.*
+!src/cfi/usercode/user_entry.*
 
 # Ignore flasher.py output files
 toolsExtra/*.bin

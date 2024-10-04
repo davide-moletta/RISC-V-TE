@@ -35,17 +35,17 @@ export PORT=/dev/ttyUSB0
 
 Build and run:
 ```
-make -C path/to/RISC-V-TE/src/shadowstack clean build flash monitor
+make -C path/to/RISC-V-TE/src/cfi clean build flash monitor
 ```
 
 Build:
 ```
-make -C path/to/RISC-V-TE/src/shadowstack clean build
+make -C path/to/RISC-V-TE/src/cfi clean build
 ```
 
 Clean binaries and dumps:
 ```
-make -C path/to/RISC-V-TE/src/shadowstack clean
+make -C path/to/RISC-V-TE/src/cfi clean
 ```
 
 ### Python requirements
@@ -59,7 +59,7 @@ Install the [_riscv-none-elf toolchain_](https://github.com/xpack-dev-tools/risc
 
 Use the file _flasher.py_ inside toolsExtra/ to build, instrument, and run the code:
 ```
-python3 flasher.py [output file name] [operation]
+python3 flasher.py [operation]
 ```
 
 Where the operation can be:
@@ -103,5 +103,5 @@ sudo service udev restart
 
 ## Import code
 
-To ensure the correct functioning of the instrumenter import or create your files under the _path/to/RISC-V-TE/src/shadowstack/usercode/_ directory.
+To ensure the correct functioning of the instrumenter import or create your files under the _path/to/RISC-V-TE/src/cfi/usercode/_ directory.
 After that, edit the _user\_entry.c_ file to call the first function of your code.
