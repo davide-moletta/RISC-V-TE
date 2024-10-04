@@ -1,7 +1,7 @@
 # RISC-V-TE
 
 This project aims at implementing **Control Flow Integrity** for bare-metal **RISC-V** based micro-controller (project based on the bare-metal infrastructure provided by [Sergey Lyubka](https://github.com/cpq/mdk/tree/main)).
-The project provides secure U-mode code execution and performs controls on return instructions thanks to a shadow stack.
+The project provides secure U-mode code execution and performs controls on both jump and return instructions thanks to a Control Flow Graph and a Shadow Stack.
 
 **Note:** This project has been developed on _Espressif's_ [_ESP32-C3-DevKitM-1_](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32c3/esp32-c3-devkitm-1/index.html). Thus, it uses _Espressif's utils_ to flash the executable.
 
@@ -80,7 +80,7 @@ python3 instrumenter.py [file1.s] [file2.s] ... [fileN.s]
 
 ### Troubleshooting
 
-If you encounter problems when flashing the code and the file logs.s states:
+If you encounter problems when flashing the code and the file _logs.log_ states:
 ```
 open(/dev/ttyUSB0): -1 (Permission denied)
 ```
