@@ -1,6 +1,7 @@
 import sys
 import re
 import os
+import CFGextractor
 from pathlib import Path
 
 PATTERNS = {
@@ -15,8 +16,10 @@ PATTERNS = {
 
 TEMPLATES = {
     "JUMP": "\tla  a7,{}\n\tecall\n",                     # Template to substitute jump code
+    "UNDIR_JUMP": "\tmv  a7,{}\n\tecall\n",               # Template to substitute undirect jump code
     "RET": "\tadd\ta7,{},1\n\tecall\n\taddi\t{},a7,-1\n", # Template to substitute return code
     "OPEN_STACK": "\taddi\tsp,sp,{}\n",                   # Template to open the stack
+    "CALL": "\tauipc  a1,0\n\tmv  a0,{}\n\tcall\tprint_reg\n",
     # Template to save the context
     "SAVE_CONTEXT": """\t{}  ra, 124(sp)\n\t{}  t0, 120(sp)\n\t{}  t1, 116(sp)  
                        \n\t{}  t2, 112(sp)\n\t{}  s0, 108(sp)\n\t{}  s1, 104(sp)
@@ -30,7 +33,7 @@ TEMPLATES = {
                        \n\t{}  t6, 16(sp)\n"""
 }
 
-# List of standard C functions
+# Lst of standard C functions
 STD_C_FUNCS = {"memset", "memcpy", "memmove", "scanf", "memcmp", "strcpy", "strncpy", "strcmp", "strncmp",
                "strlen", "strstr", "bzero", "isalnum", "isalpha", "isascii", "isblank", "iscntrl",
                "isdigit", "islower", "isgraph", "isprint", "ispunct", "isspace", "isupper", "toupper",
@@ -123,6 +126,7 @@ def instrument_vector_table():
 
 def instrument(assembly_files):
     print("Instrumenting files...\n")
+    undirect_jumps = False
     for assembly_file in assembly_files:
         print(f"Instrumenting file {os.path.basename(assembly_file)}...")
         replaced_jump = 0
@@ -152,10 +156,11 @@ def instrument(assembly_files):
                     new_lines.append(TEMPLATES["JUMP"].format(label)) # If the function is neither a leaf nor a std func replace the instruction
                     replaced_jump += 1
             elif undir_jump_match:
-                instr, label = undir_jump_match.groups()              # Get the instruction and the label
-                if label not in STD_C_FUNCS and not is_leaf(label):   # Check if target function is a leaf or a std C function. If it is, skip
-                    new_lines.append(TEMPLATES["JUMP"].format(label)) # If the function is neither a leaf nor a std func replace the instruction
-                    replaced_jump += 1
+                instr, label = undir_jump_match.groups()                # Get the instruction and the label
+                #new_lines.append(TEMPLATES["CALL"].format(label)) # Insert the code for the ecall
+                new_lines.append(TEMPLATES["UNDIR_JUMP"].format(label)) # Insert the code for the ecall
+                replaced_jump += 1
+                undirect_jumps = True                    
                     
             ################################
             # CHECK FOR RETURN INSTRUCTION #
@@ -174,6 +179,9 @@ def instrument(assembly_files):
         print(f"File {os.path.basename(assembly_file)} had {replaced_jump} jump instruction(s) and {replaced_return} return instruction(s)\n")
     
     instrument_vector_table()
+
+    if(undirect_jumps == True):
+        CFGextractor.extract()
 
 def main():
     if len(sys.argv) < 2:

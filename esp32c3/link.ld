@@ -14,6 +14,8 @@ SECTIONS {
 
   .intr_service_routines :{ KEEP(*(.intr_service_routines)) }  > iram
 
+  .cfg :{ KEEP(*(.cfg)) }  > iram
+
   .user_code :{ KEEP(*(.user_code)) }  > iram
 
   .machine_setup :{ KEEP(*(.machine_setup)) } > iram

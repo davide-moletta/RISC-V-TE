@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "intr_vector_table.h"
 #include "shadow_stack.h"
+#include "cfg.h"
 
 // Interrupt vector table with all the calls to interrupt service routines
 void interrupt_vector_table(void) __attribute__((section(".interrupt_vector_table")));
@@ -38,6 +39,8 @@ void esr_handler_reserved(void)         __attribute__((section(".intr_service_ro
 void code_termination(void)             __attribute__((section(".intr_service_routines")));
 
 __attribute__((section(".shadow_stack"))) SStack shadow_stack = {.top = -1};
+__attribute__((section(".cfg"))) CFG cfg = {.sources = {1077415020, 1077415280, 1077415318}, 
+                                            .destinations = {1077415240, 1077415062, 1077415154}};
 
 /*
 Interrupt | exception Code | Description
@@ -267,18 +270,24 @@ void esr_handler_U_mode_ecall(unsigned int ecode_address_encoding, unsigned int 
     else if ((ecode_address_encoding % 2) == 0) // If the address is even we check for jump
     {
         /*
-            CFI CHECK: mepc + 4 and destination address must be legal
+            CFG CHECK: mepc + 4 and destination address must be legal
 
             IF ALLOWED PUSH mepc + 4 (ecall) + 2 (jump instruction) to shadow stack
         */
         printf("\t[ESR - U Mode Ecall]:\tJump check requested for %x and mepc: %x\n", ecode_address_encoding, mepc);
-        unsigned int address_to_store = mepc + 6;
-        if(push(&shadow_stack, address_to_store) != 1)
-        {  
-            printf("\t[ESR - U Mode Ecall]:\tStack is full, terminating execution ...\n");
+        unsigned int source = mepc + 4;
+        if(check(&cfg, source, ecode_address_encoding) == 1){
+            if(push(&shadow_stack, source + 2) != 1)
+            {  
+                printf("\t[ESR - U Mode Ecall]:\tStack is full, terminating execution ...\n");
+                code_termination();
+            } 
+        } else {
+            printf("\t[ESR - U Mode Ecall]:\tNo CFG match, terminating execution ...\n");
             code_termination();
-        } 
-        printf("\t[ESR - U Mode Ecall]:\tReturn address %x stored correctly ...\n", address_to_store);
+        }
+
+        printf("\t[ESR - U Mode Ecall]:\tReturn address %x stored correctly ...\n", source + 2);
     }
     else if ((ecode_address_encoding % 2) != 0) // If the address is odd, we remove 1 and check for return
     {
