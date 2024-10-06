@@ -99,7 +99,7 @@ def secure_build():
     run_command(f"{TOOLCHAIN}-objdump -D {OUTPUT}.elf", capture_output=True, output_file=Path(f"{DIRECTORY}/toolsExtra/{OUTPUT}.s")) # Creates .s file (for inspections)
 
     print("Clearing assembly files...")
-    run_command(f"rm {all_assembly_files}") # Removes assembly files
+    #run_command(f"rm {all_assembly_files}") # Removes assembly files
 
     print("Files instrumented and built successfully\n")
 

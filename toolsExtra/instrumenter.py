@@ -44,14 +44,13 @@ STD_C_FUNCS = {"memset", "memcpy", "memmove", "scanf", "memcmp", "strcpy", "strn
                "atoi", "atol", "strtol", "strtoul", "printf", "__udivdi3", "__umoddi3", "uart_tx_one_char2",
                "uart_rx_one_char", "uart_rx_one_char_block", "uart_rx_readbuff", "__divdi3"}
 
-leaf_functions = set()
+leaves_functions = set()           
 
-# Check if target function is a leaf
-def is_leaf(function_name: str) -> bool:
-    print(f"Checking function {function_name}...")
-    target_pattern = re.compile(rf'^[ \t]*{function_name}\s*:\s*$') # Regex to find the start of the desired function
+# Search all leaves functions
+def search_leaves():
+    print("\nSearching for leaves functions...")
     
-    for filename in Path(".").glob("*.s"):                          # For each file except peculiar ones, read its content and check
+    for filename in Path(".").glob("*.s"):                          # For each file except peculiar ones, read content and check
         if filename.name in {"boot.s", "main.s", "intr_vector_table.s", "shadow_stack.s", "cfg.s"}:
             continue
         
@@ -59,20 +58,36 @@ def is_leaf(function_name: str) -> bool:
             lines = f.readlines()
 
         function_found = False
-        for line in lines:                              # If there is a match for the target, set found to true
-            if target_pattern.search(line):
-                function_found = True
-                continue                                # Continue checking next lines
+        current_function = ""
+        current_leaf = True
+        for line in lines:                             
+            function_match = PATTERNS["FUNC_START"].search(line)    # If there is a match for the start of a function
+            if function_match:                                   
+                if current_function != "" and current_leaf:         # If the function is changing and the last function was a leaf store it
+                    leaves_functions.add(current_function)
+                current_function = function_match.group(1)          # Save new name for current function
+                print(f"Checking function {current_function}...")
+                function_found = True                               # Set found to true
+                current_leaf = True
+                continue
 
-            if function_found:
-                if PATTERNS["FUNC_START"].search(line): # If we match the start of a new function the target function is a leaf
-                    leaf_functions.add(function_name)   # Add the function name to the list of leaf functions
-                    return True
-                if PATTERNS["DIR_JUMP"].search(line):   # If we match a jump instruction the target function is not a leaf
-                    return False                                   
+            if function_found:                                      # If we are inside a function
+                jump_match = PATTERNS["DIR_JUMP"].search(line)      # If we match a direct jump
+                if jump_match:                                         
+                    instr, label = jump_match.groups()              # Get the instruction and the label
+                    if label not in STD_C_FUNCS:                    # Check if target function is a std C function. If it is, skip
+                        current_leaf = False                        # Set current leaf to false
+                        function_found = False                      # Set found to false
+                        continue
+                if PATTERNS["UNDIR_JUMP"].search(line):             # If we match an undirect jump
+                    print("undir jump found")
+                    function_found = False                          # Set current leaf to false
+                    current_leaf = False                            # Set found to false
+                    continue  
 
-    leaf_functions.add(function_name)
-    return True                                         # If no calls found, assume the function is a leaf                                      
+        if current_leaf:                                            # When we reach EoF check if last function was a leaf
+            leaves_functions.add(current_function)                  # Store it 
+            function_found = False                                  # Set found to false
 
 def instrument_vector_table():
     print("Instrumenting interrupt vector table file...\n")
@@ -125,7 +140,9 @@ def instrument_vector_table():
         f.writelines(new_lines)
 
 def instrument(assembly_files):
-    print("Instrumenting files...\n")
+    search_leaves()
+    print(leaves_functions)
+    print("\nInstrumenting files...\n")
     undirect_jumps = False
     for assembly_file in assembly_files:
         print(f"Instrumenting file {os.path.basename(assembly_file)}...")
@@ -150,14 +167,14 @@ def instrument(assembly_files):
             ##############################
             jump_match = PATTERNS["DIR_JUMP"].search(line)
             undir_jump_match = PATTERNS["UNDIR_JUMP"].search(line)
-            if jump_match:                                            # If we match a direct jump or an undirect jump instruction
-                instr, label = jump_match.groups()                    # Get the instruction and the label
-                if label not in STD_C_FUNCS and not is_leaf(label):   # Check if target function is a leaf or a std C function. If it is, skip
-                    new_lines.append(TEMPLATES["JUMP"].format(label)) # If the function is neither a leaf nor a std func replace the instruction
+            if jump_match:                                                     # If we match a direct jump or an undirect jump instruction
+                instr, label = jump_match.groups()                             # Get the instruction and the label
+                if label not in STD_C_FUNCS and label not in leaves_functions: # Check if target function is a leaf or a std C function. If it is, skip
+                    new_lines.append(TEMPLATES["JUMP"].format(label))          # If the function is neither a leaf nor a std func replace the instruction
                     replaced_jump += 1
             elif undir_jump_match:
                 instr, label = undir_jump_match.groups()                # Get the instruction and the label
-                #new_lines.append(TEMPLATES["CALL"].format(label))       # Insert the code for the ecall
+                new_lines.append(TEMPLATES["CALL"].format(label))       # Insert the code for the ecall
                 new_lines.append(TEMPLATES["UNDIR_JUMP"].format(label)) # Insert the code for the ecall
                 replaced_jump += 1
                 undirect_jumps = True                    
@@ -166,7 +183,7 @@ def instrument(assembly_files):
             # CHECK FOR RETURN INSTRUCTION #
             ################################
             ret_match = PATTERNS["RET"].search(line)                           # If we match a return instruction
-            if ret_match and curr_function not in leaf_functions:              # Check if the current function is a leaf. If it is, skip
+            if ret_match and curr_function not in leaves_functions:            # Check if the current function is a leaf. If it is, skip
                 instr, label = ret_match.groups()                              # Get the instruction and the label
                 new_lines.append(TEMPLATES["RET"].format(label, label, label)) # Append the label that contains the return address
                 replaced_return += 1
