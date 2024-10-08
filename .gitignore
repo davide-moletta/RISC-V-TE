@@ -7,6 +7,10 @@ dump.asm
 src/cfi/usercode/*.*
 !src/cfi/usercode/user_entry.*
 
+# Ignore c and h files outside main directory
+*.c
+*.h
+
 # Ignore flasher.py output files
 toolsExtra/*.bin
 toolsExtra/*.elf
