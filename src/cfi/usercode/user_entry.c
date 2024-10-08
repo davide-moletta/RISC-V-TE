@@ -1,14 +1,12 @@
 #include <stdio.h>
 #include "user_entry.h"
-#include "merge.h"
-
-void user_mode_entry_point() __attribute__((section(".user_code")));
+#include "user_code.h"
 
 void user_mode_entry_point()
 {
     printf("\n\n--- Start of user code ---\n\n");
 
-    mergeSetup(); // Call first user function here
+    user_code(); // Call first user function here
 
     printf("\n\n--- End of user code ---\n\n");
 

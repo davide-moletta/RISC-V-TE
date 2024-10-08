@@ -1,5 +1,7 @@
 #include "mdk.h"
 
+void _start(void) __attribute__((section(".machine_setup")));
+
 extern int main(void);
 extern char _sbss, _ebss, _end, _eram;
 

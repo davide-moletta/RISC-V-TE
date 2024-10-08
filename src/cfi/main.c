@@ -37,7 +37,6 @@ int main(void)
          -------------------------------------------------------------------
             2      1      1     1      1      1      1     1      1     1
      */
-
      printf("Configuring mstatus register ...\n");
 
      asm("csrr t0, mstatus");  // Load MSTATUS in t0

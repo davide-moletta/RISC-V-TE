@@ -16,8 +16,6 @@ SECTIONS {
 
   .cfg :{ KEEP(*(.cfg)) }  > iram
 
-  .user_code :{ KEEP(*(.user_code)) }  > iram
-
   .machine_setup :{ KEEP(*(.machine_setup)) } > iram
   
   .text :{ *(.text) *(.text*) } > iram
