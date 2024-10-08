@@ -1,8 +1,10 @@
+import pty
 import sys
 import subprocess
 import os
 import shlex
 import instrumenter
+import threading
 from pathlib import Path
 
 #############
@@ -35,7 +37,31 @@ def run_command(command, capture_output=False, output_file=None):
         print(f"Error: Command '{command}' failed with error: {e}")
         sys.exit(1)
     except KeyboardInterrupt:
-        sys.exit(0)    
+        sys.exit(0)  
+  
+
+def extractor(command):
+    command_list = shlex.split(command)
+    output_lines = []
+
+    try:
+        # Start the command with Popen
+        with subprocess.Popen(command_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE,text=True, bufsize=1, universal_newlines=True) as process:
+            try:
+                while True:                              # Poll the process for new output until it terminates
+                    out = process.stdout.readline()
+                    if out:
+                        output_lines.append(out.strip()) # Store output
+                    if process.poll() is not None:       # Break loop if process has finished
+                        break
+            except KeyboardInterrupt:
+                process.terminate()                      # Terminate the process
+                process.wait()                           # Wait for the process to terminate
+                return "\n".join(output_lines)
+
+    except subprocess.CalledProcessError as e:
+        print(f"Error: Command '{command}' failed with error: {e}")
+        sys.exit(1)
 
 # Function to clear files before creating new ones
 def clear():
@@ -46,9 +72,12 @@ def clear():
         file.unlink()
 
 # Function to flash and monitor the application
-def flash():
+def flash(extract = False):
     run_command(f"{ESPUTIL} flash {FLASH_ADDR} {OUTPUT}.bin") # Flash the executable onto the board
-    run_command(f"{ESPUTIL} monitor")                         # Monitor the application to see I/O
+    if extract:
+        return extractor(f"{ESPUTIL} monitor")                # If extract is true capture output to compute CFG
+    else:
+        run_command(f"{ESPUTIL} monitor")                     # Else monitor the application to see I/O
 
 # Function to build the executable
 def build():
@@ -94,6 +123,11 @@ def secure_build():
 
     print(f"Creating {OUTPUT}.bin file...")
     run_command(f"{ESPUTIL} mkbin {OUTPUT}.elf {OUTPUT}.bin") # Creates .bin file
+
+    output_string = flash(extract=True)
+    print(f"output string is {output_string}")
+
+    # add CFG creation and remove logging
 
     print(f"Creating {OUTPUT}.s file...")
     run_command(f"{TOOLCHAIN}-objdump -D {OUTPUT}.elf", capture_output=True, output_file=Path(f"{DIRECTORY}/toolsExtra/{OUTPUT}.s")) # Creates .s file (for inspections)

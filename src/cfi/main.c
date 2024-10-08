@@ -127,18 +127,9 @@ int main(void)
      asm("li t0, 0x070F1B0F"); // Load configuration bits in t0
      asm("csrw pmpcfg0, t0");  // Write configuration in csr
 
-     /*
-          OLD PMP CONFIGURATION
-     */
-     // asm("li t0, 0x90000000");
-     // asm("srli t0, t0, 2");
-     // asm("csrw pmpaddr0, t0");
-     // asm("li t0, 0x0707070F");
-     // asm("csrw pmpcfg0, t0");
-
      printf("Jumping to user code for execution ...\n");
 
-     asm("mret"); // Jump to user code in user mode
+     asm("mret"); // Jump to user code in U mode
 
      return 0;
 }
