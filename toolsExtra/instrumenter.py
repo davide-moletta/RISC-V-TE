@@ -198,8 +198,7 @@ def instrument(assembly_files):
     
     instrument_vector_table()
 
-    if(undirect_jumps == True):
-        CFGextractor.extract()
+    return undirect_jumps
 
 def main():
     if len(sys.argv) < 2:

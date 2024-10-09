@@ -1,10 +1,9 @@
-import pty
 import sys
 import subprocess
 import os
 import shlex
 import instrumenter
-import threading
+import CFGextractor
 from pathlib import Path
 
 #############
@@ -47,18 +46,16 @@ def extractor(command):
     try:
         # Start the command with Popen
         with subprocess.Popen(command_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE,text=True, bufsize=1, universal_newlines=True) as process:
-            try:
                 while True:                              # Poll the process for new output until it terminates
                     out = process.stdout.readline()
-                    if out:
-                        output_lines.append(out.strip()) # Store output
-                    if process.poll() is not None:       # Break loop if process has finished
+                    if "Source" in out:
+                        output_lines.append(out.strip()) # If the line is regarding register logging, store output
+                    if "Execution terminated" in out:    # Break loop if process has finished
                         break
-            except KeyboardInterrupt:
+
                 process.terminate()                      # Terminate the process
                 process.wait()                           # Wait for the process to terminate
                 return "\n".join(output_lines)
-
     except subprocess.CalledProcessError as e:
         print(f"Error: Command '{command}' failed with error: {e}")
         sys.exit(1)
@@ -113,7 +110,7 @@ def secure_build():
     run_command(f"{TOOLCHAIN}-gcc -S {CFLAGS} {SOURCES} {extra_sources}") # Creates individual assembly files
 
     # Instrument the files
-    instrumenter.instrument(files_to_instrument) 
+    undir_jump = instrumenter.instrument(files_to_instrument) 
 
     # Retrieve all assembly files to be assembled and linked
     all_assembly_files = " ".join([f"{DIRECTORY}/toolsExtra/{file}" for file in os.listdir(f"{DIRECTORY}/toolsExtra") if file.endswith(".s")])
@@ -124,10 +121,15 @@ def secure_build():
     print(f"Creating {OUTPUT}.bin file...")
     run_command(f"{ESPUTIL} mkbin {OUTPUT}.elf {OUTPUT}.bin") # Creates .bin file
 
-    output_string = flash(extract=True)
-    print(f"output string is {output_string}")
+    # If there are undirect jumps run program to detect jump addresses
+    if undir_jump:
+        output_string = flash(extract=True)
+    else:
+        output_string = ""
+    print(f"Output string is:\n {output_string}")
 
-    # add CFG creation and remove logging
+    # Extract CFG 
+    CFGextractor.extract(output_string)
 
     print(f"Creating {OUTPUT}.s file...")
     run_command(f"{TOOLCHAIN}-objdump -D {OUTPUT}.elf", capture_output=True, output_file=Path(f"{DIRECTORY}/toolsExtra/{OUTPUT}.s")) # Creates .s file (for inspections)
