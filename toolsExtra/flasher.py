@@ -110,7 +110,7 @@ def secure_build():
     run_command(f"{TOOLCHAIN}-gcc -S {CFLAGS} {SOURCES} {extra_sources}") # Creates individual assembly files
 
     # Instrument the files
-    undir_jump = instrumenter.instrument(files_to_instrument) 
+    undir_jump = instrumenter.instrument(files_to_instrument, CFGLogging=True) 
 
     # Retrieve all assembly files to be assembled and linked
     all_assembly_files = " ".join([f"{DIRECTORY}/toolsExtra/{file}" for file in os.listdir(f"{DIRECTORY}/toolsExtra") if file.endswith(".s")])
@@ -121,18 +121,27 @@ def secure_build():
     print(f"Creating {OUTPUT}.bin file...")
     run_command(f"{ESPUTIL} mkbin {OUTPUT}.elf {OUTPUT}.bin") # Creates .bin file
 
+    print(f"Creating {OUTPUT}.s file...")
+    run_command(f"{TOOLCHAIN}-objdump -D {OUTPUT}.elf", capture_output=True, output_file=Path(f"{DIRECTORY}/toolsExtra/{OUTPUT}.s")) # Creates .s file (for inspections)
+
     # If there are undirect jumps run program to detect jump addresses
     if undir_jump:
         output_string = flash(extract=True)
+        blocks = CFGextractor.find_blocks(OUTPUT + ".s")
+
+        # Instrument the files
+        undir_jump = instrumenter.instrument(files_to_instrument)
+        run_command(f"{TOOLCHAIN}-gcc {all_assembly_files} {LINKFLAGS} -o {OUTPUT}.elf") # Creates .elf file
+        run_command(f"{ESPUTIL} mkbin {OUTPUT}.elf {OUTPUT}.bin") # Creates .bin file
+        run_command(f"{TOOLCHAIN}-objdump -D {OUTPUT}.elf", capture_output=True, output_file=Path(f"{DIRECTORY}/toolsExtra/{OUTPUT}.s")) # Creates .s file (for inspections)
     else:
         output_string = ""
-    print(f"Output string is:\n {output_string}")
+        blocks = []
 
     # Extract CFG 
-    CFGextractor.extract(output_string)
+    CFGextractor.extract(output_string, blocks, OUTPUT + ".s")
 
-    print(f"Creating {OUTPUT}.s file...")
-    run_command(f"{TOOLCHAIN}-objdump -D {OUTPUT}.elf", capture_output=True, output_file=Path(f"{DIRECTORY}/toolsExtra/{OUTPUT}.s")) # Creates .s file (for inspections)
+    # Insert CFG and re-compile
 
     print("Clearing assembly files...")
     run_command(f"rm {all_assembly_files}") # Removes assembly files

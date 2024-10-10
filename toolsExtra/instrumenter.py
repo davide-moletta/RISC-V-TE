@@ -140,7 +140,7 @@ def instrument_vector_table():
     with Path("intr_vector_table.s").open('w') as f:
         f.writelines(new_lines)
 
-def instrument(assembly_files):
+def instrument(assembly_files, CFGLogging=False):
     search_leaves()
     print(leaves_functions)
     print("\nInstrumenting files...\n")
@@ -175,7 +175,8 @@ def instrument(assembly_files):
                     replaced_jump += 1
             elif undir_jump_match:
                 instr, label = undir_jump_match.groups()                # Get the instruction and the label
-                new_lines.append(TEMPLATES["CALL"].format(label))       # Insert the code for the ecall
+                if CFGLogging:
+                    new_lines.append(TEMPLATES["CALL"].format(label))   # Insert the code to log undirect jump addresses if the flag is true
                 new_lines.append(TEMPLATES["UNDIR_JUMP"].format(label)) # Insert the code for the ecall
                 replaced_jump += 1
                 undirect_jumps = True                    
