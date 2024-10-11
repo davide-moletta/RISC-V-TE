@@ -127,19 +127,19 @@ def secure_build():
     # If there are undirect jumps run program to detect jump addresses
     if undir_jump:
         output_string = flash(extract=True)
-        blocks = CFGextractor.find_blocks(OUTPUT + ".s")
+        print_reg_address, blocks = CFGextractor.find_blocks(OUTPUT + ".s")
 
-        # Instrument the files
-        undir_jump = instrumenter.instrument(files_to_instrument)
-        run_command(f"{TOOLCHAIN}-gcc {all_assembly_files} {LINKFLAGS} -o {OUTPUT}.elf") # Creates .elf file
-        run_command(f"{ESPUTIL} mkbin {OUTPUT}.elf {OUTPUT}.bin") # Creates .bin file
+        run_command(f"{TOOLCHAIN}-gcc -S {CFLAGS} {SOURCES} {extra_sources}")                                                            # Creates individual assembly files
+        undir_jump = instrumenter.instrument(files_to_instrument)                                                                        # Instrument the files
+        run_command(f"{TOOLCHAIN}-gcc {all_assembly_files} {LINKFLAGS} -o {OUTPUT}.elf")                                                 # Creates .elf file
+        run_command(f"{ESPUTIL} mkbin {OUTPUT}.elf {OUTPUT}.bin")                                                                        # Creates .bin file
         run_command(f"{TOOLCHAIN}-objdump -D {OUTPUT}.elf", capture_output=True, output_file=Path(f"{DIRECTORY}/toolsExtra/{OUTPUT}.s")) # Creates .s file (for inspections)
     else:
         output_string = ""
         blocks = []
 
     # Extract CFG 
-    CFGextractor.extract(output_string, blocks, OUTPUT + ".s")
+    CFGextractor.extract(output_string, blocks, print_reg_address, OUTPUT + ".s")
 
     # Insert CFG and re-compile
 

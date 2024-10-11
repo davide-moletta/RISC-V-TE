@@ -13,14 +13,13 @@ PATTERNS = {
     "SW": re.compile(r'sw\s+\w+,\s*(\d+)\(sp\)'),                         # Regex to find the store word operations
     "CSRS": re.compile(r'^\s*csrs\s+mstatus\s*,\s*\w+\s*$')               # Regex to find the end of intr_vector_table function
 }
-#    "\tauipc  a1,0\n\tmv  a0,{}\n\tcall\tprint_reg\n",
 
 TEMPLATES = {
     "JUMP": "\tla  a7,{}\n\tecall\n",                     # Template to substitute jump code
     "UNDIR_JUMP": "\tmv  a7,{}\n\tecall\n",               # Template to substitute undirect jump code
     "RET": "\tadd\ta7,{},1\n\tecall\n\taddi\t{},a7,-1\n", # Template to substitute return code
     "OPEN_STACK": "\taddi\tsp,sp,{}\n",                   # Template to open the stack
-    "CALL": "\taddi\tsp,sp,-40\n\tsw  a5,4(sp)\n\tsw  a4,8(sp)\n\tsw  a2,12(sp)\n\tsw  a1,16(sp)\n\tsw  a0,20(sp)\n\tsw  s0,24(sp)\n\tsw  s1,28(sp)\n\tsw  s2,32(sp)\n\tsw  s3,36(sp)\n\tmv  a1,{}\n\tauipc  a0,0\n\tcall\tprint_reg\n\tlw a5, 4(sp)\n\tlw  a4,8(sp)\n\tlw  a2,12(sp)\n\tlw  a1,16(sp)\n\tlw  a0,20(sp)\n\tlw  s0,24(sp)\n\tlw  s1,28(sp)\n\tlw  s2,32(sp)\n\tlw  s3,36(sp)\n\taddi\tsp,sp,40\n",
+    "CALL": "\taddi\tsp,sp,-40\n\tsw  a5,4(sp)\n\tsw  a4,8(sp)\n\tsw  a2,12(sp)\n\tsw  a1,16(sp)\n\tsw  a0,20(sp)\n\tsw  s0,24(sp)\n\tsw  s1,28(sp)\n\tsw  s2,32(sp)\n\tsw  s3,36(sp)\n\tmv  a1,{}\n\tauipc  a0,0\n\taddi\ta0,a0,38\n\tcall\tprint_reg\n\tlw a5, 4(sp)\n\tlw  a4,8(sp)\n\tlw  a2,12(sp)\n\tlw  a1,16(sp)\n\tlw  a0,20(sp)\n\tlw  s0,24(sp)\n\tlw  s1,28(sp)\n\tlw  s2,32(sp)\n\tlw  s3,36(sp)\n\taddi\tsp,sp,40\n",
     # Template to save the context
     "SAVE_CONTEXT": """\t{}  ra, 124(sp)\n\t{}  t0, 120(sp)\n\t{}  t1, 116(sp)  
                        \n\t{}  t2, 112(sp)\n\t{}  s0, 108(sp)\n\t{}  s1, 104(sp)
