@@ -1,7 +1,6 @@
 import sys
 import re
 import os
-import CFGextractor
 from pathlib import Path
 
 PATTERNS = {
@@ -80,7 +79,6 @@ def search_leaves():
                         function_found = False                      # Set found to false
                         continue
                 if PATTERNS["UNDIR_JUMP"].search(line):             # If we match an undirect jump
-                    print("undir jump found")
                     function_found = False                          # Set current leaf to false
                     current_leaf = False                            # Set found to false
                     continue  
@@ -139,9 +137,35 @@ def instrument_vector_table():
     with Path("intr_vector_table.s").open('w') as f:
         f.writelines(new_lines)
 
+def inject_cfg(src_addresses, dst_addresses):
+    print("\nInjecting CFG...")
+    with open("../src/cfi/intr_vector_table.c", 'r') as file:
+        lines = file.readlines()
+
+    cfg_pattrern = '__attribute__((section(".cfg"))) CFG cfg =' # Pattern to find the cfg definition line
+
+    new_lines = []
+    for line in lines:
+        if cfg_pattrern in line:
+            new_src_str = ", ".join(map(str, src_addresses)) # New sources string
+            new_dst_str = ", ".join(map(str, dst_addresses)) # New destinations string
+            
+            # Construct the modified line
+            modified_line = f'__attribute__((section(".cfg"))) CFG cfg = ' \
+                            f'{{.sources = {{{new_src_str}}}, ' \
+                            f'.destinations = {{{new_dst_str}}}}};\n'
+            new_lines.append(modified_line)
+        else:
+            new_lines.append(line)
+
+    # Write new lines
+    with open("../src/cfi/intr_vector_table.c", 'w') as file:
+        file.writelines(new_lines)
+
+    print("CFG injected correctly")
+
 def instrument(assembly_files, CFGLogging=False):
     search_leaves()
-    print(leaves_functions)
     print("\nInstrumenting files...\n")
     undirect_jumps = False
     for assembly_file in assembly_files:
@@ -178,6 +202,7 @@ def instrument(assembly_files, CFGLogging=False):
                     new_lines.append(TEMPLATES["CALL"].format(label))   # Insert the code to log undirect jump addresses if the flag is true
                 new_lines.append(TEMPLATES["UNDIR_JUMP"].format(label)) # Insert the code for the ecall
                 replaced_jump += 1
+                print("found undir jump!!!!!!!!!!!!!!!!!!!!!")
                 undirect_jumps = True                    
                     
             ################################
@@ -201,14 +226,8 @@ def instrument(assembly_files, CFGLogging=False):
     return undirect_jumps
 
 def main():
-    if len(sys.argv) < 2:
-        print("This file is used to instrument the code.\n"
-                "Input files should be provided in the following order.\n"
-                "python3 instrumenter.py [file_1.s] [file_2.s] [...] [file_N.s]\n"
-                "Otherwise, use flasher.py to perform the complete build automatically")
-        sys.exit(1)
-
-    instrument(sys.argv[1:])
+    print("This file is used to instrument the code.\nPlease use flasher.py to perform the complete build automatically")
+    sys.exit(0)
 
 if __name__ == "__main__":
     main()

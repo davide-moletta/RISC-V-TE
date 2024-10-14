@@ -2,20 +2,12 @@ from pathlib import Path
 import sys
 import re
 
-src_addresses = []
-dst_addresses = []
-block_size = 56
-print_reg_size = 30
-
-section_pattern = re.compile(r'Disassembly of section \s*.([a-zA-Z0-9_]*):')
-jal_pattern = re.compile(r'^\s*([0-9a-fA-F]+):\s+[0-9a-fA-F]+\s+jal\s+([0-9a-fA-F]+)')
-
 # Function to find all logging blocks
 def find_blocks(file):
     logging_blocks_starting_addresses = []
     print_reg_address = 0
 
-    # Regex pattern to match the entire block of instructions
+    # Regex pattern to match the entire block of instructions for the undirect jump logging
     block_pattern = re.compile(r"""^\s*([0-9a-fA-F]+):\s+[0-9a-fA-F]+\s+addi\s+sp,sp,-40\s*\n
 ^\s*[0-9a-fA-F]+:\s+[0-9a-fA-F]+\s+sw\s+a5,4\(sp\)\s*\n
 ^\s*[0-9a-fA-F]+:\s+[0-9a-fA-F]+\s+sw\s+a4,8\(sp\)\s*\n
@@ -41,21 +33,17 @@ def find_blocks(file):
 ^\s*[0-9a-fA-F]+:\s+[0-9a-fA-F]+\s+lw\s+s3,36\(sp\)\s*\n
 ^\s*[0-9a-fA-F]+:\s+[0-9a-fA-F]+\s+addi\s+sp,sp,40\s*""", re.VERBOSE | re.MULTILINE)
     
-    print_reg_pattern = re.compile(r'^([0-9a-fA-F]+)\s+<print_reg>:', re.MULTILINE)
+    print_reg_pattern = re.compile(r'^([0-9a-fA-F]+)\s+<print_reg>:', re.MULTILINE) # Regex to find the function print_reg
 
     with open(file, 'r') as file:
         content = file.read()
 
-    # Find all matches of the block pattern
-    matches = block_pattern.findall(content)
-    # Find all matches of the print_reg pattern
-    pr_matches = print_reg_pattern.findall(content)
-
+    pr_matches = print_reg_pattern.findall(content) # Find all matches of the print_reg pattern
     if pr_matches:
         for idx, pr_match in enumerate(pr_matches, start=1):
-            print_reg_address = int(pr_match, 16)
+            print_reg_address = int(pr_match, 16)   # Store address of print_reg
 
-    # Output all found blocks
+    matches = block_pattern.findall(content) # Find all matches of the block pattern
     if matches:
         for idx, match in enumerate(matches, start=1):
             logging_blocks_starting_addresses.append(int(match, 16)) # Append the first address of each logging block
@@ -64,60 +52,67 @@ def find_blocks(file):
 
 def extract(output_string, blocks, print_reg_address, file):
     print("\nExtracting Control Flow Graph...")
+    src_addresses = []
+    dst_addresses = []
+    block_size = 56     # Size of a block in Bytes
+    print_reg_size = 30 # Size of print_reg function in Bytes
 
+    print(f"output is {output_string}")
     # Extract Source and Destination from the output and store it
     if output_string != "":
         print("Examining output for undirect jumps...")
         lines = output_string.split("\n")
         for line in lines:
-            match = re.search(r"Source:\s*([0-9A-Fa-f]+)\s*-\s*Destination:\s*([0-9A-Fa-f]+)", line)
-            if match:                               # For each matching line
-                src_addr = int(match.group(1), 16)  # Extract source address
-                dst_addr = int(match.group(2), 16)  # Extract destination address
+            match = re.search(r"Source:\s*([0-9A-Fa-f]+)\s*-\s*Destination:\s*([0-9A-Fa-f]+)", line) # Regex to find and extract source and destination address from output
+            if match:                                    # For each matching line
+                print(src_addr)
+                src_addr = int(match.group(1), 16)       # Extract source address
+                dst_addr = int(match.group(2), 16)       # Extract destination address
 
-                src_num_blocks = 0
-                dst_num_blocks = 0
-                for block in blocks:                # For each block
-                    if src_addr > block:            # If the block was before the source address 
-                        src_num_blocks+=1           # Add 1 to the number of blocks before
-                    if dst_addr > block:            # If the block was before the destination address 
-                        dst_num_blocks+=1           # Add 1 to the number of blocks before
+                for block in blocks:                     # For each block
+                    if src_addr > block:                 # If the block was before the source address 
+                        src_addr -= block_size           # Remove the amount occupied by a block from the source address
+                    if dst_addr > block:                 # If the block was before the destination address 
+                        dst_addr -= block_size           # Remove the amount occupied by a block from the destination address
 
-                if src_addr > print_reg_address:
-                    src_addr = src_addr - print_reg_size
-                if dst_addr > print_reg_address:
-                    dst_addr = dst_addr - print_reg_size
+                if src_addr > print_reg_address:         # If print_reg was before the source address  
+                    src_addr = src_addr - print_reg_size # Remove the amount occupied by print_reg from the source address
+                if dst_addr > print_reg_address:         # If print_reg was before the destination address  
+                    dst_addr = dst_addr - print_reg_size # Remove the amount occupied by print_reg from the destination address
 
-                src_addresses.append(src_addr - (src_num_blocks * block_size))
-                dst_addresses.append(dst_addr - (dst_num_blocks * block_size))
+                src_addresses.append(src_addr)           # Append the correctly computed source address
+                dst_addresses.append(dst_addr)           # Append the correctly computed destiantion address
     
     # Examine firmware.s to extract Source and Destination for direct jumps
     print("Examining .s file for direct jumps...\n")
+    section_pattern = re.compile(r'Disassembly of section \s*.([a-zA-Z0-9_]*):')           # pattern to find start of section
+    jal_pattern = re.compile(r'^\s*([0-9a-fA-F]+):\s+[0-9a-fA-F]+\s+jal\s+([0-9a-fA-F]+)') # Pattern to find a jal instruction
+
     with Path(file).open('r') as f:
         lines = f.readlines()
 
     text_section = False
     for line in lines:
-        section_match = section_pattern.match(line)
+        section_match = section_pattern.match(line)               # If we match the start of a section 
         if section_match:
             section_name = section_match.group(1)
-            if section_name == "text":
-                text_section = True
-            if section_name != "text" and text_section:
+            if section_name == "text":                            # If it is the text section
+                text_section = True                               # Set text_section to True
+            if section_name != "text" and text_section:           # If we are exiting from the text section stop inspecting
                 break
         
         if text_section:
-            jal_match = jal_pattern.match(line)
+            jal_match = jal_pattern.match(line)                   # If we match a jal isntruction and we are inside the text section 
             if jal_match:
-                src_addresses.append(int(jal_match.group(1), 16))
-                dst_addresses.append(int(jal_match.group(2), 16))
+                src_addresses.append(int(jal_match.group(1), 16)) # Append the source address
+                dst_addresses.append(int(jal_match.group(2), 16)) # Append the destination address
 
-    # print(f"Source addresses: {src_addresses}")
-    # print(f"Destination addresses: {dst_addresses}")
+    print(src_addresses)
+    print(dst_addresses)
+    return src_addresses, dst_addresses
 
 def main():
-    print("This file is used to extract the Control Flow Graph. Please use the flasher to do so.")
-    extract("", [], "firmware.s")
+    print("This file is used to extract the Control Flow Graph.\n Please use the flasher to do so.")
     sys.exit(0)
 
 if __name__ == "__main__":
