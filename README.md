@@ -101,7 +101,7 @@ after that, either logout and log in or run:
 sudo service udev restart
 ```
 
-If, when flashing the board, you see an output like:
+If, when flashing the board, you see the output looping on:
 ```
 ESP-ROM:esp32c3-api1-20210207
 Build:Feb  7 2021 
