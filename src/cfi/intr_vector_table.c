@@ -20,23 +20,23 @@ void isr_supervisor_external(void)       __attribute__((section(".intr_service_r
 void isr_machine_external(void)          __attribute__((section(".intr_service_routines")));
 
 // Exception Service Routines to handle exceptions
-void esr_handler_instr_addr_mis(void)  __attribute__((section(".intr_service_routines")));
-void esr_handler_instr_acc_fault(void) __attribute__((section(".intr_service_routines")));
-void esr_handler_illegal_instr(void)   __attribute__((section(".intr_service_routines")));
-void esr_handler_breakpoint(void)      __attribute__((section(".intr_service_routines")));
-void esr_handler_load_addr_mis(void)   __attribute__((section(".intr_service_routines")));
-void esr_handler_load_acc_fault(void)  __attribute__((section(".intr_service_routines")));
-void esr_handler_AMO_addr_mis(void)    __attribute__((section(".intr_service_routines")));
-void esr_handler_AMO_acc_fault(void)   __attribute__((section(".intr_service_routines")));
+void esr_handler_instr_addr_mis(void)    __attribute__((section(".intr_service_routines")));
+void esr_handler_instr_acc_fault(void)   __attribute__((section(".intr_service_routines")));
+void esr_handler_illegal_instr(void)     __attribute__((section(".intr_service_routines")));
+void esr_handler_breakpoint(void)        __attribute__((section(".intr_service_routines")));
+void esr_handler_load_addr_mis(void)     __attribute__((section(".intr_service_routines")));
+void esr_handler_load_acc_fault(void)    __attribute__((section(".intr_service_routines")));
+void esr_handler_AMO_addr_mis(void)      __attribute__((section(".intr_service_routines")));
+void esr_handler_AMO_acc_fault(void)     __attribute__((section(".intr_service_routines")));
 void esr_handler_U_mode_ecall(unsigned int ecode_address_encoding, unsigned int mepc) __attribute__((section(".intr_service_routines")));
-void esr_handler_S_mode_ecall(void)     __attribute__((section(".intr_service_routines")));
+void esr_handler_S_mode_ecall(void)      __attribute__((section(".intr_service_routines")));
 void esr_handler_M_mode_ecall(unsigned int ecode_address_encoding, unsigned int mepc) __attribute__((section(".intr_service_routines")));
-void esr_handler_instr_page_fault(void) __attribute__((section(".intr_service_routines")));
-void esr_handler_load_page_fault(void)  __attribute__((section(".intr_service_routines")));
-void esr_handler_AMO_page_fault(void)   __attribute__((section(".intr_service_routines")));
-void esr_handler_reserved(void)         __attribute__((section(".intr_service_routines")));
-
-void code_termination(void)             __attribute__((section(".intr_service_routines")));
+void esr_handler_instr_page_fault(void)  __attribute__((section(".intr_service_routines")));
+void esr_handler_load_page_fault(void)   __attribute__((section(".intr_service_routines")));
+void esr_handler_AMO_page_fault(void)    __attribute__((section(".intr_service_routines")));
+void esr_handler_reserved(void)          __attribute__((section(".intr_service_routines")));
+ 
+void code_termination(void)              __attribute__((section(".intr_service_routines")));
 
 __attribute__((section(".shadow_stack"))) SStack shadow_stack = {.top = -1};
 __attribute__((section(".cfg"))) CFG cfg = {.sources = {1077415716, 1077415840, 1077416014}, .destinations = {1077415942, 1077415758, 1077415868}};
@@ -188,12 +188,12 @@ void synchronous_exception_handler(void)
         esr_handler_reserved();
     }
 
-    // Reset mstatus to U mode before turning back (if removed leaves the )
-    asm("csrr t0, mstatus");  // Load MSTATUS in t0
-    asm("li t1, 0xFFFFE7FF"); // Load user mode status in t1
-    asm("and t0, t0, t1");    // And to change MPP bits in MSTATUS to user mode
-    asm("or t0, t0, 8");      // Or to change MIE bits in MSTATUS to 1
-    asm("csrw mstatus, t0");  // Write new MSTATUS
+    // Reset mstatus to U mode before turning back
+    asm("csrr t0, mstatus");                         // Load MSTATUS in t0
+    asm("li t1, 0xFFFFE7FF");                        // Load user mode status in t1
+    asm("and t0, t0, t1");                           // And to change MPP bits in MSTATUS to user mode
+    asm("or t0, t0, 8");                             // Or to change MIE bits in MSTATUS to 1
+    asm("csrw mstatus, t0");                         // Write new MSTATUS
     asm volatile("csrs mstatus, %0" :: "r"(1 << 0)); // Enable user-level interrupts by setting the UIE bit in mstatus CSR
 
     // Adjust the mepc to point to the next instruction after ecall
