@@ -101,6 +101,22 @@ after that, either logout and log in or run:
 sudo service udev restart
 ```
 
+If, when flashing the board, you see an output like:
+```
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021 
+rst:0x7 (TG0WDT_SYS_RST),boot:0xc (SPI_FAST_FLASH_BOOT) 
+Saved PC:0x40049a42 
+SPIWP:0xee mode:QIO, clock div:2 
+load:0x3fc88000,len:0xa70 
+ets_loader.c 78
+```
+it means that the flashing procedure has been corrupted.
+To address this issue please install [_esptool.py_](https://docs.espressif.com/projects/esptool/en/latest/esp32/) and run the following command:
+```
+python3 esptool.py --chip esp32c3 --port /dev/ttyUSB0 write_flash --flash_mode dio --flash_freq 40m 0x0 path/to/RISC-V-TE/tools/board_reset.bin 
+```
+
 ## Import code
 
 To ensure the correct functioning of the instrumenter import or create your files under the _path/to/RISC-V-TE/src/cfi/usercode/_ directory.
