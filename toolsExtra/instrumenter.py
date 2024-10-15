@@ -65,7 +65,6 @@ def search_leaves():
                 if current_function != "" and current_leaf:         # If the function is changing and the last function was a leaf store it
                     leaves_functions.add(current_function)
                 current_function = function_match.group(1)          # Save new name for current function
-                print(f"Checking function {current_function}...")
                 function_found = True                               # Set found to true
                 current_leaf = True
                 continue
@@ -139,30 +138,85 @@ def instrument_vector_table():
 
 def inject_cfg(src_addresses, dst_addresses):
     print("\nInjecting CFG...")
+
+    # Read the file contents
     with open("../src/cfi/intr_vector_table.c", 'r') as file:
-        lines = file.readlines()
+        lines = file.read()
 
-    cfg_pattrern = '__attribute__((section(".cfg"))) CFG cfg =' # Pattern to find the cfg definition line
+    # Pattern for CFG definition
+    cfg_pattern = r'__attribute__\(\(section\("\.cfg"\)\)\) CFG cfg = {.*?};'
 
-    new_lines = []
-    for line in lines:
-        if cfg_pattrern in line:
-            new_src_str = ", ".join(map(str, src_addresses)) # New sources string
-            new_dst_str = ", ".join(map(str, dst_addresses)) # New destinations string
-            
-            # Construct the modified line
-            modified_line = f'__attribute__((section(".cfg"))) CFG cfg = ' \
-                            f'{{.sources = {{{new_src_str}}}, ' \
-                            f'.destinations = {{{new_dst_str}}}}};\n'
-            new_lines.append(modified_line)
-        else:
-            new_lines.append(line)
+    # New CFG string based on src_addresses and dst_addresses
+    new_src_str = ", ".join(map(str, src_addresses))
+    new_dst_str = ", ".join(map(str, dst_addresses))
+    new_cfg_str = f'__attribute__((section(".cfg"))) CFG cfg = ' \
+                  f'{{.sources = {{{new_src_str}}}, ' \
+                  f'.destinations = {{{new_dst_str}}}}};'
 
-    # Write new lines
+    # Replace the CFG definition
+    lines = re.sub(cfg_pattern, new_cfg_str, lines, flags=re.DOTALL)
+
+    # Pattern for the old code block (without forward controls)
+    code_block_pattern = (
+        r'if\s*\(\s*push\(&shadow_stack,\s*source\s*\+\s*2\)\s*!=\s*1\s*\)\s*{'
+        r'\s*printf\("\s*\\t\[ESR - U Mode Ecall\]:\\tStack is full, terminating execution\s*\.\.\.\\n"\);\s*'
+        r'code_termination\(\);\s*}'
+    )
+
+    # Replacement code block as a multiline string
+    new_code_block = r"""
+    if (check(&cfg, source, ecode_address_encoding) == 1) {
+            if (push(&shadow_stack, source + 2) != 1) {
+                printf("\\t[ESR - U Mode Ecall]:\\tStack is full, terminating execution ...\\n");
+                code_termination();
+            }
+        } else {
+            printf("\\t[ESR - U Mode Ecall]:\\tNo CFG match, terminating execution ...\\n");
+            code_termination();
+        }
+    """
+
+    # Replace the old code block with the forward control one
+    lines = re.sub(code_block_pattern, new_code_block.strip(), lines, flags=re.DOTALL)
+
+    # Write the modified content back to the file
     with open("../src/cfi/intr_vector_table.c", 'w') as file:
-        file.writelines(new_lines)
+        file.write(lines)
 
     print("CFG injected correctly")
+
+def restore_vector_table():
+    # Read the file contents
+    with open("../src/cfi/intr_vector_table.c", 'r') as file:
+        lines = file.read()
+
+
+    # Pattern for the old code block (with forward controls)
+    code_block_pattern = (
+        r'if\s*\(\s*check\(&cfg,\s*source,\s*ecode_address_encoding\)\s*==\s*1\s*\)\s*{'
+        r'\s*if\s*\(\s*push\(&shadow_stack,\s*source\s*\+\s*2\)\s*!=\s*1\s*\)\s*{'
+        r'\s*printf\("\s*\\t\[ESR - U Mode Ecall\]:\\tStack is full, terminating execution\s*\.\.\.\\n"\);\s*'
+        r'code_termination\(\);\s*}'
+        r'\s*}'
+        r'\s*else\s*{'
+        r'\s*printf\("\s*\\t\[ESR - U Mode Ecall\]:\\tNo CFG match, terminating execution\s*\.\.\.\\n"\);\s*'
+        r'code_termination\(\);\s*}'
+    )
+
+    # Replacement code block as a multiline string
+    new_code_block = r"""
+    if (push(&shadow_stack, source + 2) != 1) {
+            printf("\\t[ESR - U Mode Ecall]:\\tStack is full, terminating execution ...\\n");
+            code_termination();
+        }
+    """
+
+    # Replace the forward control code block with the normal one
+    lines = re.sub(code_block_pattern, new_code_block.strip(), lines, flags=re.DOTALL)
+
+    # Write the modified content back to the file
+    with open("../src/cfi/intr_vector_table.c", 'w') as file:
+        file.write(lines)
 
 def instrument(assembly_files, CFGLogging=False):
     search_leaves()
@@ -202,7 +256,6 @@ def instrument(assembly_files, CFGLogging=False):
                     new_lines.append(TEMPLATES["CALL"].format(label))   # Insert the code to log undirect jump addresses if the flag is true
                 new_lines.append(TEMPLATES["UNDIR_JUMP"].format(label)) # Insert the code for the ecall
                 replaced_jump += 1
-                print("found undir jump!!!!!!!!!!!!!!!!!!!!!")
                 undirect_jumps = True                    
                     
             ################################

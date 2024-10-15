@@ -56,8 +56,8 @@ def extract(output_string, blocks, print_reg_address, file):
     dst_addresses = []
     block_size = 56     # Size of a block in Bytes
     print_reg_size = 30 # Size of print_reg function in Bytes
+    forward_check_size = 84
 
-    print(f"output is {output_string}")
     # Extract Source and Destination from the output and store it
     if output_string != "":
         print("Examining output for undirect jumps...")
@@ -65,7 +65,6 @@ def extract(output_string, blocks, print_reg_address, file):
         for line in lines:
             match = re.search(r"Source:\s*([0-9A-Fa-f]+)\s*-\s*Destination:\s*([0-9A-Fa-f]+)", line) # Regex to find and extract source and destination address from output
             if match:                                    # For each matching line
-                print(src_addr)
                 src_addr = int(match.group(1), 16)       # Extract source address
                 dst_addr = int(match.group(2), 16)       # Extract destination address
 
@@ -76,9 +75,12 @@ def extract(output_string, blocks, print_reg_address, file):
                         dst_addr -= block_size           # Remove the amount occupied by a block from the destination address
 
                 if src_addr > print_reg_address:         # If print_reg was before the source address  
-                    src_addr = src_addr - print_reg_size # Remove the amount occupied by print_reg from the source address
+                    src_addr -= print_reg_size           # Remove the amount occupied by print_reg from the source address
                 if dst_addr > print_reg_address:         # If print_reg was before the destination address  
-                    dst_addr = dst_addr - print_reg_size # Remove the amount occupied by print_reg from the destination address
+                    dst_addr -= print_reg_size           # Remove the amount occupied by print_reg from the destination address
+
+                src_addr += forward_check_size
+                dst_addr += forward_check_size
 
                 src_addresses.append(src_addr)           # Append the correctly computed source address
                 dst_addresses.append(dst_addr)           # Append the correctly computed destiantion address
@@ -104,11 +106,9 @@ def extract(output_string, blocks, print_reg_address, file):
         if text_section:
             jal_match = jal_pattern.match(line)                   # If we match a jal isntruction and we are inside the text section 
             if jal_match:
-                src_addresses.append(int(jal_match.group(1), 16)) # Append the source address
-                dst_addresses.append(int(jal_match.group(2), 16)) # Append the destination address
+                src_addresses.append(int(jal_match.group(1), 16) + forward_check_size) # Append the source address
+                dst_addresses.append(int(jal_match.group(2), 16) + forward_check_size) # Append the destination address
 
-    print(src_addresses)
-    print(dst_addresses)
     return src_addresses, dst_addresses
 
 def main():

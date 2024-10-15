@@ -124,36 +124,37 @@ def secure_build():
     print(f"Creating {OUTPUT}.s file...")
     run_command(f"{TOOLCHAIN}-objdump -D {OUTPUT}.elf", capture_output=True, output_file=Path(f"{DIRECTORY}/toolsExtra/{OUTPUT}.s")) # Creates .s file (for inspections)
 
-    # # If there are undirect jumps run program to detect jump addresses
-    # if undir_jump:
-    #     output_string = flash(extract=True)
-    #     # print(f"output iss {output_string}||||||||||||||||||||||||||||")
-    #     print_reg_address, blocks = CFGextractor.find_blocks(OUTPUT + ".s")
+    # If there are undirect jumps run program to detect jump addresses
+    if undir_jump:
+        output_string = flash(extract=True)
+        print_reg_address, blocks = CFGextractor.find_blocks(OUTPUT + ".s")
 
-    #     run_command(f"{TOOLCHAIN}-gcc -S {CFLAGS} {SOURCES} {extra_sources}")                                                            # Creates individual assembly files
-    #     instrumenter.instrument(files_to_instrument)                                                                                     # Instrument the files
-    #     run_command(f"{TOOLCHAIN}-gcc {all_assembly_files} {LINKFLAGS} -o {OUTPUT}.elf")                                                 # Creates .elf file
-    #     run_command(f"{ESPUTIL} mkbin {OUTPUT}.elf {OUTPUT}.bin")                                                                        # Creates .bin file
-    #     run_command(f"{TOOLCHAIN}-objdump -D {OUTPUT}.elf", capture_output=True, output_file=Path(f"{DIRECTORY}/toolsExtra/{OUTPUT}.s")) # Creates .s file (for inspections)
-    # else:
-    #     output_string = ""
-    #     blocks = []
+        run_command(f"{TOOLCHAIN}-gcc -S {CFLAGS} {SOURCES} {extra_sources}")                                                            # Creates individual assembly files
+        instrumenter.instrument(files_to_instrument)                                                                                     # Instrument the files
+        run_command(f"{TOOLCHAIN}-gcc {all_assembly_files} {LINKFLAGS} -o {OUTPUT}.elf")                                                 # Creates .elf file
+        run_command(f"{ESPUTIL} mkbin {OUTPUT}.elf {OUTPUT}.bin")                                                                        # Creates .bin file
+        run_command(f"{TOOLCHAIN}-objdump -D {OUTPUT}.elf", capture_output=True, output_file=Path(f"{DIRECTORY}/toolsExtra/{OUTPUT}.s")) # Creates .s file (for inspections)
+    else:
+        output_string = ""
+        blocks = []
 
-    # src_addresses = []
-    # dst_addresses = []
+    src_addresses = []
+    dst_addresses = []
     
-    # src_addresses, dst_addresses = CFGextractor.extract(output_string, blocks, print_reg_address, OUTPUT + ".s") # Extract CFG 
+    src_addresses, dst_addresses = CFGextractor.extract(output_string, blocks, print_reg_address, OUTPUT + ".s") # Extract CFG 
 
-    # instrumenter.inject_cfg(src_addresses, dst_addresses) # Inject CFG
+    instrumenter.inject_cfg(src_addresses, dst_addresses) # Inject CFG
 
-    # run_command(f"{TOOLCHAIN}-gcc -S {CFLAGS} {SOURCES} {extra_sources}")                                                            # Creates individual assembly files
-    # instrumenter.instrument(files_to_instrument)                                                                                     # Instrument the files
-    # run_command(f"{TOOLCHAIN}-gcc {all_assembly_files} {LINKFLAGS} -o {OUTPUT}.elf")                                                 # Creates .elf file
-    # run_command(f"{ESPUTIL} mkbin {OUTPUT}.elf {OUTPUT}.bin")                                                                        # Creates .bin file
-    # run_command(f"{TOOLCHAIN}-objdump -D {OUTPUT}.elf", capture_output=True, output_file=Path(f"{DIRECTORY}/toolsExtra/{OUTPUT}.s")) # Creates .s file (for inspections)
+    run_command(f"{TOOLCHAIN}-gcc -S {CFLAGS} {SOURCES} {extra_sources}")                                                            # Creates individual assembly files
+    instrumenter.instrument(files_to_instrument)                                                                                     # Instrument the files
+    run_command(f"{TOOLCHAIN}-gcc {all_assembly_files} {LINKFLAGS} -o {OUTPUT}.elf")                                                 # Creates .elf file
+    run_command(f"{ESPUTIL} mkbin {OUTPUT}.elf {OUTPUT}.bin")                                                                        # Creates .bin file
+    run_command(f"{TOOLCHAIN}-objdump -D {OUTPUT}.elf", capture_output=True, output_file=Path(f"{DIRECTORY}/toolsExtra/{OUTPUT}.s")) # Creates .s file (for inspections)
 
     print("Clearing assembly files...")
     run_command(f"rm {all_assembly_files}") # Removes assembly files
+
+    instrumenter.restore_vector_table()
 
     print("Files instrumented and built successfully\n")
 

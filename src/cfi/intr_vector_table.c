@@ -39,7 +39,7 @@ void esr_handler_reserved(void)          __attribute__((section(".intr_service_r
 void code_termination(void)              __attribute__((section(".intr_service_routines")));
 
 __attribute__((section(".shadow_stack"))) SStack shadow_stack = {.top = -1};
-__attribute__((section(".cfg"))) CFG cfg = {.sources = {1077415716, 1077415840, 1077416014}, .destinations = {1077415942, 1077415758, 1077415868}};
+__attribute__((section(".cfg"))) CFG cfg = {.sources = {1077415988, 1077415716, 1077415840, 1077416014}, .destinations = {1077415796, 1077415942, 1077415758, 1077415868}};
 
 /*
 Interrupt | exception Code | Description
@@ -265,16 +265,10 @@ void esr_handler_U_mode_ecall(unsigned int ecode_address_encoding, unsigned int 
         printf("\t[ESR - U Mode Ecall]:\tJump check requested for %x and mepc: %x\n", ecode_address_encoding, mepc);
         unsigned int source = mepc + 4;
         
-        if(check(&cfg, source, ecode_address_encoding) == 1){
-            if(push(&shadow_stack, source + 2) != 1)
-            {  
-                printf("\t[ESR - U Mode Ecall]:\tStack is full, terminating execution ...\n");
-                code_termination();
-            } 
-        } else {
-            printf("\t[ESR - U Mode Ecall]:\tNo CFG match, terminating execution ...\n");
+        if (push(&shadow_stack, source + 2) != 1) {
+            printf("\t[ESR - U Mode Ecall]:\tStack is full, terminating execution ...\n");
             code_termination();
-        }
+        } 
 
         printf("\t[ESR - U Mode Ecall]:\tReturn address %x stored correctly ...\n", source + 2);
     }
@@ -318,16 +312,10 @@ void esr_handler_M_mode_ecall(unsigned int ecode_address_encoding, unsigned int 
         printf("\t[ESR - M Mode Ecall]:\tJump check requested for %x and mepc: %x\n", ecode_address_encoding, mepc);
         unsigned int source = mepc + 4;
         
-        if(check(&cfg, source, ecode_address_encoding) == 1){
-            if(push(&shadow_stack, source + 2) != 1)
-            {  
-                printf("\t[ESR - U Mode Ecall]:\tStack is full, terminating execution ...\n");
-                code_termination();
-            } 
-        } else {
-            printf("\t[ESR - U Mode Ecall]:\tNo CFG match, terminating execution ...\n");
+        if (push(&shadow_stack, source + 2) != 1) {
+            printf("\t[ESR - U Mode Ecall]:\tStack is full, terminating execution ...\n");
             code_termination();
-        }
+        } 
 
         printf("\t[ESR - M Mode Ecall]:\tReturn address %x stored correctly ...\n", source + 2);
     }
