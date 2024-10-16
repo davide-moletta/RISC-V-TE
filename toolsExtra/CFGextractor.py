@@ -7,7 +7,7 @@ import instrumenter
 def find_blocks(file):
     logging_blocks_starting_addresses = []
 
-    # Regex pattern to match the entire block of instructions for the undirect jump logging
+    # Regex pattern to match the entire block of instructions for the indirect jump logging
     block_pattern = re.compile(r"""^\s*([0-9a-fA-F]+):\s+[0-9a-fA-F]+\s+addi\s+sp,sp,-40\s*\n
 ^\s*[0-9a-fA-F]+:\s+[0-9a-fA-F]+\s+sw\s+a5,4\(sp\)\s*\n
 ^\s*[0-9a-fA-F]+:\s+[0-9a-fA-F]+\s+sw\s+a4,8\(sp\)\s*\n
@@ -52,7 +52,7 @@ def extract(output_string, blocks, file):
 
     # Extract Source and Destination from the output and store it
     if output_string != "":
-        print("Examining output for undirect jumps...")
+        print("Examining output for indirect jumps...")
         lines = output_string.split("\n")
         for line in lines:
             match = re.search(r"Source:\s*([0-9A-Fa-f]+)\s*-\s*Destination:\s*([0-9A-Fa-f]+)", line) # Regex to find and extract source and destination address from output

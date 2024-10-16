@@ -15,7 +15,7 @@ PATTERNS = {
 
 TEMPLATES = {
     "JUMP": "\tla  a7,{}\n\tecall\n",                     # Template to substitute jump code
-    "UNDIR_JUMP": "\tmv  a7,{}\n\tecall\n",               # Template to substitute undirect jump code
+    "UNDIR_JUMP": "\tmv  a7,{}\n\tecall\n",               # Template to substitute indirect jump code
     "RET": "\tadd\ta7,{},1\n\tecall\n\taddi\t{},a7,-1\n", # Template to substitute return code
     "OPEN_STACK": "\taddi\tsp,sp,{}\n",                   # Template to open the stack
     "CALL": "\taddi\tsp,sp,-40\n\tsw  a5,4(sp)\n\tsw  a4,8(sp)\n\tsw  a2,12(sp)\n\tsw  a1,16(sp)\n\tsw  a0,20(sp)\n\tsw  s0,24(sp)\n\tsw  s1,28(sp)\n\tsw  s2,32(sp)\n\tsw  s3,36(sp)\n\tmv  a1,{}\n\tauipc  a0,0\n\taddi\ta0,a0,38\n\tcall\tprint_reg\n\tlw a5, 4(sp)\n\tlw  a4,8(sp)\n\tlw  a2,12(sp)\n\tlw  a1,16(sp)\n\tlw  a0,20(sp)\n\tlw  s0,24(sp)\n\tlw  s1,28(sp)\n\tlw  s2,32(sp)\n\tlw  s3,36(sp)\n\taddi\tsp,sp,40\n",
@@ -77,7 +77,7 @@ def search_leaves():
                         current_leaf = False                        # Set current leaf to false
                         function_found = False                      # Set found to false
                         continue
-                if PATTERNS["UNDIR_JUMP"].search(line):             # If we match an undirect jump
+                if PATTERNS["UNDIR_JUMP"].search(line):             # If we match an indirect jump
                     function_found = False                          # Set current leaf to false
                     current_leaf = False                            # Set found to false
                     continue  
@@ -221,7 +221,7 @@ def restore_vector_table():
 def instrument(assembly_files, CFGLogging=False):
     search_leaves()
     print("\nInstrumenting files...\n")
-    undirect_jumps = False
+    indirect_jumps = False
     for assembly_file in assembly_files:
         print(f"Instrumenting file {os.path.basename(assembly_file)}...")
         replaced_jump = 0
@@ -245,7 +245,7 @@ def instrument(assembly_files, CFGLogging=False):
             ##############################
             jump_match = PATTERNS["DIR_JUMP"].search(line)
             undir_jump_match = PATTERNS["UNDIR_JUMP"].search(line)
-            if jump_match:                                                     # If we match a direct jump or an undirect jump instruction
+            if jump_match:                                                     # If we match a direct jump or an indirect jump instruction
                 instr, label = jump_match.groups()                             # Get the instruction and the label
                 if label not in STD_C_FUNCS and label not in leaves_functions: # Check if target function is a leaf or a std C function. If it is, skip
                     new_lines.append(TEMPLATES["JUMP"].format(label))          # If the function is neither a leaf nor a std func replace the instruction
@@ -253,10 +253,10 @@ def instrument(assembly_files, CFGLogging=False):
             elif undir_jump_match:
                 instr, label = undir_jump_match.groups()                # Get the instruction and the label
                 if CFGLogging:
-                    new_lines.append(TEMPLATES["CALL"].format(label))   # Insert the code to log undirect jump addresses if the flag is true
+                    new_lines.append(TEMPLATES["CALL"].format(label))   # Insert the code to log indirect jump addresses if the flag is true
                 new_lines.append(TEMPLATES["UNDIR_JUMP"].format(label)) # Insert the code for the ecall
                 replaced_jump += 1
-                undirect_jumps = True                    
+                indirect_jumps = True                    
                     
             ################################
             # CHECK FOR RETURN INSTRUCTION #
@@ -276,7 +276,7 @@ def instrument(assembly_files, CFGLogging=False):
     
     instrument_vector_table()
 
-    return undirect_jumps
+    return indirect_jumps
 
 def main():
     print("This file is used to instrument the code.\nPlease use flasher.py to perform the complete build automatically")

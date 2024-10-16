@@ -123,7 +123,7 @@ def secure_build():
     print(f"Creating {OUTPUT}.s file...")
     run_command(f"{TOOLCHAIN}-objdump -D {OUTPUT}.elf", capture_output=True, output_file=Path(f"{DIRECTORY}/toolsExtra/{OUTPUT}.s")) # Creates .s file (for inspections)
 
-    # If there are undirect jumps run program to detect jump addresses
+    # If there are indirect jumps run program to detect jump addresses
     if undir_jump:
         output_string = flash(extract=True)
         blocks = CFGextractor.find_blocks(OUTPUT + ".s")
