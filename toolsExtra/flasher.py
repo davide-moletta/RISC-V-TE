@@ -19,7 +19,7 @@ CFLAGS = (
     "-fno-common -Wconversion -march=rv32imc_zicsr -mabi=ilp32 -O1 -ffunction-sections "
     f"-fdata-sections -fno-builtin-printf -I{SOURCES_DIRECTORY} -I{DIRECTORY}/esp32c3") # GCC flags for building
 LINKFLAGS = f"-T{DIRECTORY}/esp32c3/link.ld -nostdlib -nostartfiles -Wl,--gc-sections"  # Linker flags
-SOURCES = f"{DIRECTORY}/esp32c3/boot.c {SOURCES_DIRECTORY}/main.c {SOURCES_DIRECTORY}/intr_vector_table.c {SOURCES_DIRECTORY}/shadow_stack.c {SOURCES_DIRECTORY}/cfg.c" # Needed C files 
+SOURCES = f"{DIRECTORY}/esp32c3/boot.c {SOURCES_DIRECTORY}/main.c {SOURCES_DIRECTORY}/intr_vector_table.c {SOURCES_DIRECTORY}/shadow_stack.c {SOURCES_DIRECTORY}/cfg.c {SOURCES_DIRECTORY}/uj_logger.c" # Needed C files 
 
 ESPUTIL = f"{DIRECTORY}/esputil/esputil" # Espressif utils to flash to the board
 FLASH_ADDR = 0                           # Flash starting address
@@ -38,7 +38,6 @@ def run_command(command, capture_output=False, output_file=None):
     except KeyboardInterrupt:
         sys.exit(0)  
   
-
 def extractor(command):
     command_list = shlex.split(command)
     output_lines = []
@@ -127,7 +126,7 @@ def secure_build():
     # If there are undirect jumps run program to detect jump addresses
     if undir_jump:
         output_string = flash(extract=True)
-        print_reg_address, blocks = CFGextractor.find_blocks(OUTPUT + ".s")
+        blocks = CFGextractor.find_blocks(OUTPUT + ".s")
 
         run_command(f"{TOOLCHAIN}-gcc -S {CFLAGS} {SOURCES} {extra_sources}")                                                            # Creates individual assembly files
         instrumenter.instrument(files_to_instrument)                                                                                     # Instrument the files
@@ -138,12 +137,7 @@ def secure_build():
         output_string = ""
         blocks = []
 
-    src_addresses = []
-    dst_addresses = []
-    
-    src_addresses, dst_addresses = CFGextractor.extract(output_string, blocks, print_reg_address, OUTPUT + ".s") # Extract CFG 
-
-    instrumenter.inject_cfg(src_addresses, dst_addresses) # Inject CFG
+    CFGextractor.extract(output_string, blocks, OUTPUT + ".s") # Extract and inject CFG 
 
     run_command(f"{TOOLCHAIN}-gcc -S {CFLAGS} {SOURCES} {extra_sources}")                                                            # Creates individual assembly files
     instrumenter.instrument(files_to_instrument)                                                                                     # Instrument the files
@@ -157,7 +151,6 @@ def secure_build():
     instrumenter.restore_vector_table()
 
     print("Files instrumented and built successfully\n")
-
 
 def main():
     if len(sys.argv) < 2 or sys.argv[1] in {"help", "-help", "--help", "h", "-h", "--h"}:

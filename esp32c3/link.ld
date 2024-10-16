@@ -8,17 +8,20 @@ _eram = ORIGIN(dram) + LENGTH(dram);
 ENTRY(_start)
 
 SECTIONS {
-  .shadow_stack : { KEEP(*(.shadow_stack)) }  > iram
 
   .interrupt_vector_table : { KEEP(*(.interrupt_vector_table)) }  > iram
 
   .intr_service_routines : { KEEP(*(.intr_service_routines)) }  > iram
 
-  .cfg : { KEEP(*(.cfg)) }  > iram
+  .shadow_stack (READONLY) : { KEEP(*(.shadow_stack)) }  > iram
+
+  .cfg (READONLY) : { KEEP(*(.cfg)) }  > iram
 
   .machine_setup : { KEEP(*(.machine_setup)) } > iram
   
   .text : { *(.text) *(.text*) } > iram
+
+  .uj_logger : { KEEP(*(.uj_logger)) } > iram
 
   .data : {
     . = ALIGN(16);

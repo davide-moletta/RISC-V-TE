@@ -53,8 +53,6 @@ int main(void)
      printf("Configuring PMP ...\n");
 
      /*
-         PMP configuration
-
          PMP configuration CSRs
 
          31      24 23     16 15      8 7        0
@@ -90,41 +88,42 @@ int main(void)
               1        2         2           1          1          1
 
 
-         in pmpaddrX we store the address for which we want to configure the PMP
-         shifted right by 2 since the pmpaddr contains bits [33:2]
-
-         in pmpcfgX we store the configuration for that PMP
-
+         In pmpaddrX we store the address for which we want to configure the PMP shifted right by 2 since the pmpaddr contains bits [33:2]
+         In pmpcfgX we store the configuration for that PMP
      */
 
-     // First section covers addresses from 0 to the start of the shadow stack section
-     // For this part we apply a TOR configuration with XWR privileges
+     // First section covers addresses from 0 to the start of the interrupt_vector_table section
+     // For this part we apply a TOR configuration with RW privileges
+     asm("la t0, interrupt_vector_table"); // Load address of interrupt_vector_table
+     asm("srli t0, t0, 2");                // srli of 2 
+     asm("csrw pmpaddr0, t0");             // Load address in csr
+
+     // Second section covers the addresses from the start of the interrupt_vector_table section to the start of the shadow_stack section
+     // For this part we apply a TOR configuration with XRW privileges
      asm("la t0, shadow_stack"); // Load address of shadow stack
      asm("srli t0, t0, 2");      // srli of 2 
-     asm("csrw pmpaddr0, t0");   // Load address in csr
+     asm("csrw pmpaddr1, t0");   // Load address in csr
 
-     // Second section covers the addresses of the shadow stack section
-     // For this part we apply a NAPOT configuration with RW privileges
+     // Third section covers all the addresses from the start of the shadow_stack section to the start of the machine_setup section
+     // For this part we apply a TOR configuration with RW privileges
+     asm("la t0, .machine_setup"); // Load address of machine_setup
+     asm("srli t0, t0, 2");        // srli of 2 
+     asm("csrw pmpaddr2, t0");     // Load address in csr
 
-     // We take t0 which contains the address of shadow_stack shifted by 2 
-     // and we apply an or with 6 to create a NAPOT space of 256B
-     asm("ori t0, t0, 6");
-     asm("csrw pmpaddr1, t0"); // Load address in csr
-
-     // Third section covers all the addresses from the end of shadow stack upwards
+     // Fourth section covers all the addresses from the start of the machine_setup section upwards
      // For this part we apply a TOR configuration with XRW privileges
      asm("li t0, 0x90000000"); // Load value big enough to cover rest of memory
      asm("srli t0, t0, 2");    // srli of 2 
-     asm("csrw pmpaddr2, t0"); // Load address in csr
+     asm("csrw pmpaddr3, t0"); // Load address in csr
 
      /*
           Configurations:
-          first:  [0 00 01 1 1 1] = 0x0F -> TOR setup, not locked with XRW permissions
-          second: [0 00 11 0 1 1] = 0x1B -> NAPOT setup, not locked with RW permissions
-          third:  [0 00 01 1 1 1] = 0x0F -> TOR setup, not locked with XRW permissions
-          fourth: [0 00 00 1 1 1] = 0x07 -> Disabled
+          first:  [0 00 01 1 1 1] = 0x0F -> TOR setup (for data), not locked with XRW permissions
+          second: [0 00 01 1 1 1] = 0x0F -> TOR setup (for intr_vector_table), not locked with XRW permissions
+          third:  [0 00 00 0 1 1] = 0x03 -> TOR setup (for shadow_stck and cfg), not locked with RW permissions
+          fourth: [0 00 01 1 1 1] = 0x0F -> TOR setup (for rest of memory), not locked with XRW permissions
      */
-     asm("li t0, 0x070F1B0F"); // Load configuration bits in t0
+     asm("li t0, 0x0F030F0F"); // Load configuration bits in t0
      asm("csrw pmpcfg0, t0");  // Write configuration in csr
 
      printf("Jumping to user code for execution ...\n");

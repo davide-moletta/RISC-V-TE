@@ -3,7 +3,7 @@
 
 #include "shadow_stack.h"
 
-// Temporary to test secureness of PMP
+// // Temporary to test secureness of PMP
 // extern SStack shadow_stack; 
 
 // Interrupt vector table with all the calls to interrupt service routines

@@ -1,11 +1,11 @@
 from pathlib import Path
 import sys
 import re
+import instrumenter
 
 # Function to find all logging blocks
 def find_blocks(file):
     logging_blocks_starting_addresses = []
-    print_reg_address = 0
 
     # Regex pattern to match the entire block of instructions for the undirect jump logging
     block_pattern = re.compile(r"""^\s*([0-9a-fA-F]+):\s+[0-9a-fA-F]+\s+addi\s+sp,sp,-40\s*\n
@@ -33,29 +33,21 @@ def find_blocks(file):
 ^\s*[0-9a-fA-F]+:\s+[0-9a-fA-F]+\s+lw\s+s3,36\(sp\)\s*\n
 ^\s*[0-9a-fA-F]+:\s+[0-9a-fA-F]+\s+addi\s+sp,sp,40\s*""", re.VERBOSE | re.MULTILINE)
     
-    print_reg_pattern = re.compile(r'^([0-9a-fA-F]+)\s+<print_reg>:', re.MULTILINE) # Regex to find the function print_reg
-
     with open(file, 'r') as file:
         content = file.read()
-
-    pr_matches = print_reg_pattern.findall(content) # Find all matches of the print_reg pattern
-    if pr_matches:
-        for idx, pr_match in enumerate(pr_matches, start=1):
-            print_reg_address = int(pr_match, 16)   # Store address of print_reg
 
     matches = block_pattern.findall(content) # Find all matches of the block pattern
     if matches:
         for idx, match in enumerate(matches, start=1):
             logging_blocks_starting_addresses.append(int(match, 16)) # Append the first address of each logging block
 
-    return print_reg_address, logging_blocks_starting_addresses
+    return logging_blocks_starting_addresses
 
-def extract(output_string, blocks, print_reg_address, file):
+def extract(output_string, blocks, file):
     print("\nExtracting Control Flow Graph...")
     src_addresses = []
     dst_addresses = []
     block_size = 56     # Size of a block in Bytes
-    print_reg_size = 30 # Size of print_reg function in Bytes
     forward_check_size = 84
 
     # Extract Source and Destination from the output and store it
@@ -73,11 +65,6 @@ def extract(output_string, blocks, print_reg_address, file):
                         src_addr -= block_size           # Remove the amount occupied by a block from the source address
                     if dst_addr > block:                 # If the block was before the destination address 
                         dst_addr -= block_size           # Remove the amount occupied by a block from the destination address
-
-                if src_addr > print_reg_address:         # If print_reg was before the source address  
-                    src_addr -= print_reg_size           # Remove the amount occupied by print_reg from the source address
-                if dst_addr > print_reg_address:         # If print_reg was before the destination address  
-                    dst_addr -= print_reg_size           # Remove the amount occupied by print_reg from the destination address
 
                 src_addr += forward_check_size
                 dst_addr += forward_check_size
@@ -109,7 +96,7 @@ def extract(output_string, blocks, print_reg_address, file):
                 src_addresses.append(int(jal_match.group(1), 16) + forward_check_size) # Append the source address
                 dst_addresses.append(int(jal_match.group(2), 16) + forward_check_size) # Append the destination address
 
-    return src_addresses, dst_addresses
+    instrumenter.inject_cfg(src_addresses, dst_addresses) # Inject CFG
 
 def main():
     print("This file is used to extract the Control Flow Graph.\n Please use the flasher to do so.")

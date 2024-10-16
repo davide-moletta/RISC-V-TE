@@ -50,7 +50,7 @@ def search_leaves():
     print("\nSearching for leaves functions...")
     
     for filename in Path(".").glob("*.s"):                          # For each file except peculiar ones, read content and check
-        if filename.name in {"boot.s", "main.s", "intr_vector_table.s", "shadow_stack.s", "cfg.s"}:
+        if filename.name in {"boot.s", "main.s", "intr_vector_table.s", "shadow_stack.s", "cfg.s", "uj_logger.s"}:
             continue
         
         with filename.open('r') as f:
