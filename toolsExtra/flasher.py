@@ -19,7 +19,7 @@ CFLAGS = (
     "-fno-common -Wconversion -march=rv32imc_zicsr -mabi=ilp32 -O1 -ffunction-sections "
     f"-fdata-sections -fno-builtin-printf -I{SOURCES_DIRECTORY} -I{DIRECTORY}/esp32c3") # GCC flags for building
 LINKFLAGS = f"-T{DIRECTORY}/esp32c3/link.ld -nostdlib -nostartfiles -Wl,--gc-sections"  # Linker flags
-SOURCES = f"{DIRECTORY}/esp32c3/boot.c {SOURCES_DIRECTORY}/main.c {SOURCES_DIRECTORY}/intr_vector_table.c {SOURCES_DIRECTORY}/shadow_stack.c {SOURCES_DIRECTORY}/cfg.c {SOURCES_DIRECTORY}/uj_logger.c" # Needed C files 
+SOURCES = f"{DIRECTORY}/esp32c3/boot.c {SOURCES_DIRECTORY}/main.c {SOURCES_DIRECTORY}/intr_vector_table.c {SOURCES_DIRECTORY}/shadow_stack.c {SOURCES_DIRECTORY}/cfg.c {SOURCES_DIRECTORY}/ij_logger.c" # Needed C files 
 
 ESPUTIL = f"{DIRECTORY}/esputil/esputil" # Espressif utils to flash to the board
 FLASH_ADDR = 0                           # Flash starting address
@@ -99,20 +99,16 @@ def secure_build():
     clear() # Clear files
 
     print("Retrieving user source files...")
-    # Retrieve user imported source files
-    extra_sources = " ".join([f"{SOURCES_DIRECTORY}/usercode/{file}" for file in os.listdir(f"{SOURCES_DIRECTORY}/usercode") if file.endswith(".c")])
 
-    # Retrieve files to instrument
-    files_to_instrument = [source.replace("src/cfi/usercode/", "toolsExtra/").replace(".c", ".s") for source in extra_sources.split()]
+    extra_sources = " ".join([f"{SOURCES_DIRECTORY}/usercode/{file}" for file in os.listdir(f"{SOURCES_DIRECTORY}/usercode") if file.endswith(".c")]) # Retrieve user imported source files
+
+    files_to_instrument = [source.replace("src/cfi/usercode/", "toolsExtra/").replace(".c", ".s") for source in extra_sources.split()] # Retrieve files to instrument
     
-    print("Creating individual assembly files...")
     run_command(f"{TOOLCHAIN}-gcc -S {CFLAGS} {SOURCES} {extra_sources}") # Creates individual assembly files
+   
+    ind_jumps = instrumenter.instrument(files_to_instrument, CFGLogging=True) # Instrument the files with logging capabilities and retrieve the existence of indirect jumps
 
-    # Instrument the files
-    undir_jump = instrumenter.instrument(files_to_instrument, CFGLogging=True) 
-
-    # Retrieve all assembly files to be assembled and linked
-    all_assembly_files = " ".join([f"{DIRECTORY}/toolsExtra/{file}" for file in os.listdir(f"{DIRECTORY}/toolsExtra") if file.endswith(".s")])
+    all_assembly_files = " ".join([f"{DIRECTORY}/toolsExtra/{file}" for file in os.listdir(f"{DIRECTORY}/toolsExtra") if file.endswith(".s")]) # Retrieve all assembly files to be assembled and linked
   
     print(f"Creating {OUTPUT}.elf file...")
     run_command(f"{TOOLCHAIN}-gcc {all_assembly_files} {LINKFLAGS} -o {OUTPUT}.elf") # Creates .elf file
@@ -124,7 +120,7 @@ def secure_build():
     run_command(f"{TOOLCHAIN}-objdump -D {OUTPUT}.elf", capture_output=True, output_file=Path(f"{DIRECTORY}/toolsExtra/{OUTPUT}.s")) # Creates .s file (for inspections)
 
     # If there are indirect jumps run program to detect jump addresses
-    if undir_jump:
+    if ind_jumps:
         output_string = flash(extract=True)
         blocks = CFGextractor.find_blocks(OUTPUT + ".s")
 

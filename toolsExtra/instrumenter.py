@@ -5,7 +5,7 @@ from pathlib import Path
 
 PATTERNS = {
     "DIR_JUMP": re.compile(r'\b(call)\b\s+(\w+)'),                        # Regex to find direct jump instructions
-    "UNDIR_JUMP": re.compile(r'\b(jalr)\b\s+(\w+)'),                      # Regex to find indirect jump instructions
+    "INDIR_JUMP": re.compile(r'\b(jalr)\b\s+(\w+)'),                      # Regex to find indirect jump instructions
     "RET": re.compile(r'\b(jr)\b\s+(\w+)'),                               # Regex to find return instructions
     "FUNC_START": re.compile(r'^[ \t]*([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*$'), # Regex to find the start of a function
     "STACK_OPENING": re.compile(r'addi\s+sp,sp,(-\d+)'),                  # Regex to find the opening of the stack
@@ -15,10 +15,18 @@ PATTERNS = {
 
 TEMPLATES = {
     "JUMP": "\tla  a7,{}\n\tecall\n",                     # Template to substitute jump code
-    "UNDIR_JUMP": "\tmv  a7,{}\n\tecall\n",               # Template to substitute indirect jump code
+    "INDIR_JUMP": "\tmv  a7,{}\n\tecall\n",               # Template to substitute indirect jump code
     "RET": "\tadd\ta7,{},1\n\tecall\n\taddi\t{},a7,-1\n", # Template to substitute return code
     "OPEN_STACK": "\taddi\tsp,sp,{}\n",                   # Template to open the stack
-    "CALL": "\taddi\tsp,sp,-40\n\tsw  a5,4(sp)\n\tsw  a4,8(sp)\n\tsw  a2,12(sp)\n\tsw  a1,16(sp)\n\tsw  a0,20(sp)\n\tsw  s0,24(sp)\n\tsw  s1,28(sp)\n\tsw  s2,32(sp)\n\tsw  s3,36(sp)\n\tmv  a1,{}\n\tauipc  a0,0\n\taddi\ta0,a0,38\n\tcall\tprint_reg\n\tlw a5, 4(sp)\n\tlw  a4,8(sp)\n\tlw  a2,12(sp)\n\tlw  a1,16(sp)\n\tlw  a0,20(sp)\n\tlw  s0,24(sp)\n\tlw  s1,28(sp)\n\tlw  s2,32(sp)\n\tlw  s3,36(sp)\n\taddi\tsp,sp,40\n",
+    # Template to call the print_reg function
+    "CALL": """\taddi\tsp,sp,-40\n\tsw  a5,4(sp)\n\tsw  a4,8(sp)
+                \n\tsw  a2,12(sp)\n\tsw  a1,16(sp)\n\tsw  a0,20(sp)
+                \n\tsw  s0,24(sp)\n\tsw  s1,28(sp)\n\tsw  s2,32(sp)
+                \n\tsw  s3,36(sp)\n\tmv  a1,{}\n\tauipc  a0,0
+                \n\taddi\ta0,a0,38\n\tcall\tprint_reg\n\tlw a5, 4(sp)
+                \n\tlw  a4,8(sp)\n\tlw  a2,12(sp)\n\tlw  a1,16(sp)
+                \n\tlw  a0,20(sp)\n\tlw  s0,24(sp)\n\tlw  s1,28(sp)
+                \n\tlw  s2,32(sp)\n\tlw  s3,36(sp)\n\taddi\tsp,sp,40\n""",
     # Template to save the context
     "SAVE_CONTEXT": """\t{}  ra, 124(sp)\n\t{}  t0, 120(sp)\n\t{}  t1, 116(sp)  
                        \n\t{}  t2, 112(sp)\n\t{}  s0, 108(sp)\n\t{}  s1, 104(sp)
@@ -45,89 +53,89 @@ STD_C_FUNCS = {"memset", "memcpy", "memmove", "scanf", "memcmp", "strcpy", "strn
 
 leaves_functions = set()           
 
-# Search all leaves functions
+# Function to search all leaves functions
 def search_leaves():
     print("\nSearching for leaves functions...")
     
-    for filename in Path(".").glob("*.s"):                          # For each file except peculiar ones, read content and check
-        if filename.name in {"boot.s", "main.s", "intr_vector_table.s", "shadow_stack.s", "cfg.s", "uj_logger.s"}:
+    for filename in Path(".").glob("*.s"):                       # For each file except peculiar ones, read content and check
+        if filename.name in {"boot.s", "main.s", "intr_vector_table.s", "shadow_stack.s", "cfg.s", "ij_logger.s"}:
             continue
         
         with filename.open('r') as f:
             lines = f.readlines()
 
-        function_found = False
-        current_function = ""
-        current_leaf = True
+        curr_function = ""                                       # Keeps track of the current function name
+        func_found = False                                       # Keeps track of whether we are inside a function or not
+        curr_leaf = True                                         # Keeps track of whether the current fucntion is a leaf
         for line in lines:                             
-            function_match = PATTERNS["FUNC_START"].search(line)    # If there is a match for the start of a function
-            if function_match:                                   
-                if current_function != "" and current_leaf:         # If the function is changing and the last function was a leaf store it
-                    leaves_functions.add(current_function)
-                current_function = function_match.group(1)          # Save new name for current function
-                function_found = True                               # Set found to true
-                current_leaf = True
+            function_match = PATTERNS["FUNC_START"].search(line) 
+            if function_match:                                   # If there is a match for the start of a function
+                if curr_function != "" and curr_leaf:            # If the function is changing and the last function was a leaf store it
+                    leaves_functions.add(curr_function)
+                curr_function = function_match.group(1)          # Save new name for current function
+                func_found = True                                # Set found to True
+                curr_leaf = True                                 # Set leaf to True
                 continue
 
-            if function_found:                                      # If we are inside a function
-                jump_match = PATTERNS["DIR_JUMP"].search(line)      # If we match a direct jump
-                if jump_match:                                         
-                    instr, label = jump_match.groups()              # Get the instruction and the label
-                    if label not in STD_C_FUNCS:                    # Check if target function is a std C function. If it is, skip
-                        current_leaf = False                        # Set current leaf to false
-                        function_found = False                      # Set found to false
-                        continue
-                if PATTERNS["UNDIR_JUMP"].search(line):             # If we match an indirect jump
-                    function_found = False                          # Set current leaf to false
-                    current_leaf = False                            # Set found to false
+            if func_found:                                       # If we are inside a function
+                jump_match = PATTERNS["DIR_JUMP"].search(line)      
+                if jump_match:                                   # If we match a direct jump
+                    instr, label = jump_match.groups()           # Get the instruction and the label
+                    if label not in STD_C_FUNCS:                 # Check if target function is a std C function. If it is, skip
+                        curr_leaf = False                        # Set current leaf to false
+                        func_found = False                       # Set found to false
+                        continue                        
+                if PATTERNS["INDIR_JUMP"].search(line):          # If we match an indirect jump
+                    func_found = False                           # Set current leaf to false
+                    curr_leaf = False                            # Set found to false
                     continue  
 
-        if current_leaf:                                            # When we reach EoF check if last function was a leaf
-            leaves_functions.add(current_function)                  # Store it 
-            function_found = False                                  # Set found to false
+        if curr_leaf:                                            # When we reach EoF check if last function was a leaf
+            leaves_functions.add(curr_function)                  # Store it 
+            func_found = False                                   # Set found to False
 
+# Function to instrument the interrupt_vector_table
 def instrument_vector_table():
-    print("Instrumenting interrupt vector table file...\n")
+    print("Instrumenting interrupt vector table...\n")
     with Path("intr_vector_table.s").open('r') as f:
         lines = f.readlines()
 
     new_lines = []
-    function_found = False
-    sw_found = True
-    sw_added = False
-    
+    func_found = False                                                       # Keeps track of whether we are inside the desired function or not
+    sw_found = True                                                          # Keeps track of whether we found a store word operation or not
+    sw_added = False                                                         # Keeps track of whether the instrumentation has been made or not
     for line in lines:
         if re.search(r'^[ \t]*synchronous_exception_handler\s*:\s*$', line): # Regex to find the start of the desired function
-            function_found = True                                            # If there is a match for the target, set found to true
+            func_found = True                                                # If there is a match for the target, set found to true
             new_lines.append(line)
             continue
 
-        if function_found:
+        if func_found:                                                       # If we are inside the desired function
             ####################################
             # CHECK FOR AMOUNT OF STACK OPENED #
             ####################################
             stack_match = PATTERNS["STACK_OPENING"].search(line)
-            if stack_match:                                            # If we match the opening of the stack
-                new_lines.append(TEMPLATES["OPEN_STACK"].format(-128)) # Substitute the value with an updated one
+            if stack_match:                                                  # If we match the opening of the stack
+                new_lines.append(TEMPLATES["OPEN_STACK"].format(-128))       # Substitute the value with an updated one
                 continue
 
             ###################################
             # CHECK FOR STORE WORD OPERATIONS #
             ###################################
-            if PATTERNS["SW"].search(line) and sw_found: # If we match the use of a store word operation
-                continue
-            else:                                        # As soon as we do not find other sw operations
+            if PATTERNS["SW"].search(line) and sw_found:                     # If we match the use of a store word operation
+                continue                                                     # Skip to erase those lines
+            else:                                                            # As soon as we do not find other sw operations
                 sw_found = False    
-                if not sw_added:
-                    new_lines.append(TEMPLATES["SAVE_CONTEXT"].format(*["sw"] * TEMPLATES["SAVE_CONTEXT"].count("{}"))) # Save context
+                if not sw_added:                                             # If we did not already updated the code
+                    new_lines.append(TEMPLATES["SAVE_CONTEXT"].format(*["sw"] * TEMPLATES["SAVE_CONTEXT"].count("{}"))) # Write new save context block
                     sw_added = True
 
             #############################
             # CHECK FOR END OF FUNCTION #
             #############################
             if PATTERNS["CSRS"].search(line):                                                                       # If we match the end of the function
-                function_found = False
-                new_lines.append(TEMPLATES["SAVE_CONTEXT"].format(*["lw"] * TEMPLATES["SAVE_CONTEXT"].count("{}"))) # Restore context
+                func_found = False
+                new_lines.append(TEMPLATES["SAVE_CONTEXT"].format(*["lw"] * TEMPLATES["SAVE_CONTEXT"].count("{}"))) # Write new restore context block
                 new_lines.append(TEMPLATES["OPEN_STACK"].format(128))                                               # Close the stack 
 
         new_lines.append(line)
@@ -136,15 +144,14 @@ def instrument_vector_table():
     with Path("intr_vector_table.s").open('w') as f:
         f.writelines(new_lines)
 
+# Function to inject the CFG
 def inject_cfg(src_addresses, dst_addresses):
     print("\nInjecting CFG...")
 
-    # Read the file contents
-    with open("../src/cfi/intr_vector_table.c", 'r') as file:
-        lines = file.read()
+    with open("../src/cfi/intr_vector_table.c", 'r') as f:
+        lines = f.read()
 
-    # Pattern for CFG definition
-    cfg_pattern = r'__attribute__\(\(section\("\.cfg"\)\)\) CFG cfg = {.*?};'
+    cfg_pattern = r'__attribute__\(\(section\("\.cfg"\)\)\) CFG cfg = {.*?};' # Pattern for CFG definition
 
     # New CFG string based on src_addresses and dst_addresses
     new_src_str = ", ".join(map(str, src_addresses))
@@ -153,8 +160,7 @@ def inject_cfg(src_addresses, dst_addresses):
                   f'{{.sources = {{{new_src_str}}}, ' \
                   f'.destinations = {{{new_dst_str}}}}};'
 
-    # Replace the CFG definition
-    lines = re.sub(cfg_pattern, new_cfg_str, lines, flags=re.DOTALL)
+    lines = re.sub(cfg_pattern, new_cfg_str, lines, flags=re.DOTALL) # Replace the CFG definition
 
     # Pattern for the old code block (without forward controls)
     code_block_pattern = (
@@ -176,20 +182,17 @@ def inject_cfg(src_addresses, dst_addresses):
         }
     """
 
-    # Replace the old code block with the forward control one
-    lines = re.sub(code_block_pattern, new_code_block.strip(), lines, flags=re.DOTALL)
+    lines = re.sub(code_block_pattern, new_code_block.strip(), lines, flags=re.DOTALL) # Replace the old code block with the forward control one
 
     # Write the modified content back to the file
-    with open("../src/cfi/intr_vector_table.c", 'w') as file:
-        file.write(lines)
+    with open("../src/cfi/intr_vector_table.c", 'w') as f:
+        f.write(lines)
 
     print("CFG injected correctly")
 
 def restore_vector_table():
-    # Read the file contents
-    with open("../src/cfi/intr_vector_table.c", 'r') as file:
-        lines = file.read()
-
+    with open("../src/cfi/intr_vector_table.c", 'r') as f:
+        lines = f.read()
 
     # Pattern for the old code block (with forward controls)
     code_block_pattern = (
@@ -211,22 +214,24 @@ def restore_vector_table():
         }
     """
 
-    # Replace the forward control code block with the normal one
-    lines = re.sub(code_block_pattern, new_code_block.strip(), lines, flags=re.DOTALL)
+    lines = re.sub(code_block_pattern, new_code_block.strip(), lines, flags=re.DOTALL) # Replace the forward control code block with the normal one
 
     # Write the modified content back to the file
-    with open("../src/cfi/intr_vector_table.c", 'w') as file:
-        file.write(lines)
+    with open("../src/cfi/intr_vector_table.c", 'w') as f:
+        f.write(lines)
 
+# Function to instrument the code
 def instrument(assembly_files, CFGLogging=False):
-    search_leaves()
+    search_leaves()                                     # Search for leaves functions
+
     print("\nInstrumenting files...\n")
-    indirect_jumps = False
+    
+    ind_jumps = False                                   # Keeps track of whether we have found indirect jumps or not
     for assembly_file in assembly_files:
         print(f"Instrumenting file {os.path.basename(assembly_file)}...")
-        replaced_jump = 0
-        replaced_return = 0
-        curr_function = "" # Function tracking
+        replaced_jump = 0                               # Keeps track of how many jumps were found
+        replaced_return = 0                             # Keeps track of how many return were found
+        curr_function = ""                              # Keeps track of the name of the current function
 
         with Path(assembly_file).open('r') as f:
             lines = f.readlines()
@@ -237,26 +242,26 @@ def instrument(assembly_files, CFGLogging=False):
             # CHECK FOR NEW FUNCTION START #
             ################################
             function_match = PATTERNS["FUNC_START"].search(line)
-            if function_match:                          # If we match the start of a new function store its name
+            if function_match:                          # If we match the start of a new function
                 curr_function = function_match.group(1) # Store the current function name
 
             ##############################
             # CHECK FOR JUMP INSTRUCTION #
             ##############################
             jump_match = PATTERNS["DIR_JUMP"].search(line)
-            undir_jump_match = PATTERNS["UNDIR_JUMP"].search(line)
-            if jump_match:                                                     # If we match a direct jump or an indirect jump instruction
+            ind_jump_match = PATTERNS["INDIR_JUMP"].search(line)
+            if jump_match:                                                     # If we match a direct jump instruction
                 instr, label = jump_match.groups()                             # Get the instruction and the label
                 if label not in STD_C_FUNCS and label not in leaves_functions: # Check if target function is a leaf or a std C function. If it is, skip
-                    new_lines.append(TEMPLATES["JUMP"].format(label))          # If the function is neither a leaf nor a std func replace the instruction
+                    new_lines.append(TEMPLATES["JUMP"].format(label))          # If the function is neither a leaf nor a std C function replace the instruction
                     replaced_jump += 1
-            elif undir_jump_match:
-                instr, label = undir_jump_match.groups()                # Get the instruction and the label
-                if CFGLogging:
-                    new_lines.append(TEMPLATES["CALL"].format(label))   # Insert the code to log indirect jump addresses if the flag is true
-                new_lines.append(TEMPLATES["UNDIR_JUMP"].format(label)) # Insert the code for the ecall
+            elif ind_jump_match:                                               # If we match an indirect jump instruction
+                instr, label = ind_jump_match.groups()                         # Get the instruction and the label
+                if CFGLogging:                                                 # If we are logging for the simulation
+                    new_lines.append(TEMPLATES["CALL"].format(label))          # Insert the code to log indirect jump addresses
+                new_lines.append(TEMPLATES["INDIR_JUMP"].format(label))        # Insert the code for the ecall
                 replaced_jump += 1
-                indirect_jumps = True                    
+                ind_jumps = True                    
                     
             ################################
             # CHECK FOR RETURN INSTRUCTION #
@@ -264,7 +269,7 @@ def instrument(assembly_files, CFGLogging=False):
             ret_match = PATTERNS["RET"].search(line)                           # If we match a return instruction
             if ret_match and curr_function not in leaves_functions:            # Check if the current function is a leaf. If it is, skip
                 instr, label = ret_match.groups()                              # Get the instruction and the label
-                new_lines.append(TEMPLATES["RET"].format(label, label, label)) # Append the label that contains the return address
+                new_lines.append(TEMPLATES["RET"].format(label, label, label)) # Insert the code for the ecall
                 replaced_return += 1
 
             new_lines.append(line)
@@ -272,11 +277,12 @@ def instrument(assembly_files, CFGLogging=False):
         # Write new lines
         with Path(assembly_file).open('w') as f:
             f.writelines(new_lines)
+            
         print(f"File {os.path.basename(assembly_file)} had {replaced_jump} jump instruction(s) and {replaced_return} return instruction(s)\n")
     
     instrument_vector_table()
 
-    return indirect_jumps
+    return ind_jumps
 
 def main():
     print("This file is used to instrument the code.\nPlease use flasher.py to perform the complete build automatically")

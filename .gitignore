@@ -9,7 +9,7 @@ src/cfi/usercode/*.*
 
 # Ignore c and h files outside main directory
 *.c
-!src/cfi/uj_logger.c
+!src/cfi/ij_logger.c
 *.h
 
 # Ignore flasher.py output files

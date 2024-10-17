@@ -47,8 +47,8 @@ def extract(output_string, blocks, file):
     print("\nExtracting Control Flow Graph...")
     src_addresses = []
     dst_addresses = []
-    block_size = 56     # Size of a block in Bytes
-    forward_check_size = 84
+    block_size = 56         # Size of a logging block in Bytes
+    forward_check_size = 84 # Size of the forward control block in Bytes
 
     # Extract Source and Destination from the output and store it
     if output_string != "":
@@ -66,15 +66,15 @@ def extract(output_string, blocks, file):
                     if dst_addr > block:                 # If the block was before the destination address 
                         dst_addr -= block_size           # Remove the amount occupied by a block from the destination address
 
-                src_addr += forward_check_size
-                dst_addr += forward_check_size
+                src_addr += forward_check_size           # Add to the source address the amount occupied by the forward control (since it's added after)           
+                dst_addr += forward_check_size           # Add to the destination address the amount occupied by the forward control (since it's added after)
 
                 src_addresses.append(src_addr)           # Append the correctly computed source address
-                dst_addresses.append(dst_addr)           # Append the correctly computed destiantion address
+                dst_addresses.append(dst_addr)           # Append the correctly computed destination address
     
     # Examine firmware.s to extract Source and Destination for direct jumps
     print("Examining .s file for direct jumps...\n")
-    section_pattern = re.compile(r'Disassembly of section \s*.([a-zA-Z0-9_]*):')           # pattern to find start of section
+    section_pattern = re.compile(r'Disassembly of section \s*.([a-zA-Z0-9_]*):')           # Pattern to find start of section
     jal_pattern = re.compile(r'^\s*([0-9a-fA-F]+):\s+[0-9a-fA-F]+\s+jal\s+([0-9a-fA-F]+)') # Pattern to find a jal instruction
 
     with Path(file).open('r') as f:
@@ -82,8 +82,8 @@ def extract(output_string, blocks, file):
 
     text_section = False
     for line in lines:
-        section_match = section_pattern.match(line)               # If we match the start of a section 
-        if section_match:
+        section_match = section_pattern.match(line)               
+        if section_match:                                         # If we match the start of a section 
             section_name = section_match.group(1)
             if section_name == "text":                            # If it is the text section
                 text_section = True                               # Set text_section to True
@@ -91,8 +91,8 @@ def extract(output_string, blocks, file):
                 break
         
         if text_section:
-            jal_match = jal_pattern.match(line)                   # If we match a jal isntruction and we are inside the text section 
-            if jal_match:
+            jal_match = jal_pattern.match(line)                   
+            if jal_match:                                                              # If we match a jal isntruction and we are inside the text section 
                 src_addresses.append(int(jal_match.group(1), 16) + forward_check_size) # Append the source address
                 dst_addresses.append(int(jal_match.group(2), 16) + forward_check_size) # Append the destination address
 
