@@ -69,15 +69,6 @@ Where the operation can be:
 - **secure-run**: to build and flash the instrumented executable on the board;
 - **clear**: to delete _.bin_, _.elf_, _.s_ and _.log_ files.
 
-**Note:** The file _instrumenter.py_ can be used:
-- Through the _flasher.py_ script with **secure-build** and **secure-run** commands;
-- Manually by providing the assembly files as input (create the assembly files manually, instrument them with _instrumenter.py_, and finish assembly and linking manually).
-
-To use _instumenter.py_ withut _flasher.py_ run:
-```
-python3 instrumenter.py [file1.s] [file2.s] ... [fileN.s]
-```
-
 ### Troubleshooting
 
 If you encounter problems when flashing the code and the file _logs.log_ states:
