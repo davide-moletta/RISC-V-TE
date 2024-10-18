@@ -44,7 +44,7 @@ def find_blocks(file):
     return logging_blocks_starting_addresses
 
 def extract(output_string, blocks, file):
-    print("\nExtracting Control Flow Graph...")
+    print("Extracting Control Flow Graph...")
     src_addresses = []
     dst_addresses = []
     block_size = 56         # Size of a logging block in Bytes

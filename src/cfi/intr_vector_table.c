@@ -39,7 +39,7 @@ void esr_handler_reserved(void)          __attribute__((section(".intr_service_r
 void code_termination(void)              __attribute__((section(".intr_service_routines")));
 
 __attribute__((section(".shadow_stack"))) SStack shadow_stack = {.top = -1};
-__attribute__((section(".cfg"))) CFG cfg = {.sources = {1077415740, 1077415864, 1077416038, 1077416094}, .destinations = {1077415966, 1077415782, 1077416114, 1077415892}};
+__attribute__((section(".cfg"))) CFG cfg = {.sources = {1077415904, 1077415632, 1077415756, 1077415930}, .destinations = {1077415712, 1077415858, 1077415674, 1077415784}};
 
 /*
 Interrupt | exception Code | Description
