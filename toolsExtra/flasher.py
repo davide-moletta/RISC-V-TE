@@ -19,7 +19,8 @@ CFLAGS = (
     "-fno-common -Wconversion -march=rv32imc_zicsr -mabi=ilp32 -O1 -ffunction-sections "
     f"-fdata-sections -fno-builtin-printf -I{SOURCES_DIRECTORY} -I{DIRECTORY}/esp32c3") # GCC flags for building
 LINKFLAGS = f"-T{DIRECTORY}/esp32c3/link.ld -nostdlib -nostartfiles -Wl,--gc-sections"  # Linker flags
-SOURCES = f"{DIRECTORY}/esp32c3/boot.c {SOURCES_DIRECTORY}/main.c {SOURCES_DIRECTORY}/intr_vector_table.c {SOURCES_DIRECTORY}/shadow_stack.c {SOURCES_DIRECTORY}/cfg.c {SOURCES_DIRECTORY}/ij_logger.c" # Needed C files 
+SOURCES = f"{DIRECTORY}/esp32c3/boot.c {SOURCES_DIRECTORY}/main.c {SOURCES_DIRECTORY}/intr_vector_table.c {SOURCES_DIRECTORY}/shadow_stack.c {SOURCES_DIRECTORY}/cfg.c" # Needed C files 
+LOGGING_SOURCE = F"{SOURCES_DIRECTORY}/ij_logger.c" # C file for register logging
 
 ESPUTIL = f"{DIRECTORY}/esputil/esputil" # Espressif utils to flash to the board
 FLASH_ADDR = 0                           # Flash starting address
@@ -92,7 +93,8 @@ def build():
     print(f"Creating {OUTPUT}.s file...")
     run_command(f"{TOOLCHAIN}-objdump -D {OUTPUT}.elf", capture_output=True, output_file=Path(f"{DIRECTORY}/toolsExtra/{OUTPUT}.s")) # Creates .s file (for inspections)
 
-    print("Files built successfully\n")
+    bin_size = os.path.getsize(f"{DIRECTORY}/toolsExtra/{OUTPUT}.bin")
+    print(f"Files built successfully\nProduced a binary of size {bin_size} Bytes\n")
 
 # Function to instrument and build the executable
 def secure_build():
@@ -104,14 +106,14 @@ def secure_build():
 
     files_to_instrument = [source.replace("src/cfi/usercode/", "toolsExtra/").replace(".c", ".s") for source in extra_sources.split()] # Retrieve files to instrument
     
-    run_command(f"{TOOLCHAIN}-gcc -S {CFLAGS} {SOURCES} {extra_sources}") # Creates individual assembly files
+    run_command(f"{TOOLCHAIN}-gcc -S {CFLAGS} {SOURCES} {LOGGING_SOURCE} {extra_sources}") # Creates individual assembly files
    
     ind_jumps = instrumenter.instrument(files_to_instrument, CFGLogging=True) # Instrument the files with logging capabilities and retrieve the existence of indirect jumps
 
-    all_assembly_files = " ".join([f"{DIRECTORY}/toolsExtra/{file}" for file in os.listdir(f"{DIRECTORY}/toolsExtra") if file.endswith(".s")]) # Retrieve all assembly files to be assembled and linked
-  
+    all_assembly_files = " ".join([f"{DIRECTORY}/toolsExtra/{file}" for file in os.listdir(f"{DIRECTORY}/toolsExtra") if file.endswith(".s") and file != "ij_logger.s"]) # Retrieve all assembly files to be assembled and linked
+    
     print(f"Creating {OUTPUT}.elf file...")
-    run_command(f"{TOOLCHAIN}-gcc {all_assembly_files} {LINKFLAGS} -o {OUTPUT}.elf") # Creates .elf file
+    run_command(f"{TOOLCHAIN}-gcc {all_assembly_files} {DIRECTORY}/toolsExtra/ij_logger.s  {LINKFLAGS} -o {OUTPUT}.elf") # Creates .elf file
 
     print(f"Creating {OUTPUT}.bin file...")
     run_command(f"{ESPUTIL} mkbin {OUTPUT}.elf {OUTPUT}.bin") # Creates .bin file
@@ -142,11 +144,12 @@ def secure_build():
     run_command(f"{TOOLCHAIN}-objdump -D {OUTPUT}.elf", capture_output=True, output_file=Path(f"{DIRECTORY}/toolsExtra/{OUTPUT}.s")) # Creates .s file (for inspections)
 
     print("Clearing assembly files...")
-    run_command(f"rm {all_assembly_files}") # Removes assembly files
+    run_command(f"rm {all_assembly_files} {DIRECTORY}/toolsExtra/ij_logger.s") # Removes assembly files
 
     instrumenter.restore_vector_table()
 
-    print("Files instrumented and built successfully\n")
+    bin_size = os.path.getsize(f"{DIRECTORY}/toolsExtra/{OUTPUT}.bin")
+    print(f"Files instrumented and built successfully\nProduced a binary of size {bin_size} Bytes\n")
 
 def main():
     if len(sys.argv) < 2 or sys.argv[1] in {"help", "-help", "--help", "h", "-h", "--h"}:

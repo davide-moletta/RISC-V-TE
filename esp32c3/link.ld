@@ -21,7 +21,7 @@ SECTIONS {
   
   .text : { *(.text) *(.text*) } > iram
 
-  .uj_logger : { KEEP(*(.uj_logger)) } > iram
+  .ij_logger : { KEEP(*(.ij_logger)) } > iram
 
   .data : {
     . = ALIGN(16);
