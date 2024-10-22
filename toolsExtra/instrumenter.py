@@ -149,20 +149,35 @@ def instrument_vector_table(registers):
 def inject_cfg(src_addresses, dst_addresses):
     print("Injecting CFG...")
 
-    with open("../src/cfi/intr_vector_table.c", 'r') as f:
+    cfg_size = len(src_addresses)                   # Compute size of the cfg
+    new_size_str = f"size_t cfg_size = {cfg_size};" # Build the cfg_size string
+
+    cfg_space = 4 * ((cfg_size - 1) * 2)            # Compute the amount of space occupied by the cfg (-1 is because by default the cfg is {1,1} so we do not count such value)
+
+    pairs = list(zip(src_addresses, dst_addresses)) # Create pairs of (source, destination)
+    pairs.sort(key=lambda x: (x[0], x[1]))          # Sort pairs based on source first, then destination (for binary search)
+
+    # Create new cfg string based on sorted pairs and by adding the space occupied by the cfg
+    new_cfg_str = "__attribute__((section(\".cfg\"))) unsigned int cfg[][2] = {"
+    new_cfg_str += ", ".join(f"{{{src + cfg_space}, {dst + cfg_space}}}" for src, dst in pairs)
+    new_cfg_str += "};\n"
+
+    with open("../src/cfi/cfg.c", 'r') as f:
         lines = f.read()
 
-    cfg_pattern = r'__attribute__\(\(section\("\.cfg"\)\)\) CFG cfg = {.*?};' # Pattern for CFG definition
+    cfg_pattern = r'__attribute__\(\(section\("\.cfg"\)\)\) unsigned int cfg\[\]\[2\] = {.*?};' # Pattern for old CFG definition
+    size_pattern = r'size_t cfg_size = \d+;'                                                    # Pattern for old size definition
 
-    # New CFG string based on src_addresses and dst_addresses
-    new_src_str = ", ".join(map(str, src_addresses))
-    new_dst_str = ", ".join(map(str, dst_addresses))
-    new_cfg_str = f'__attribute__((section(".cfg"))) CFG cfg = ' \
-                  f'{{.sources = {{{new_src_str}}}, ' \
-                  f'.destinations = {{{new_dst_str}}}}};'
+    lines = re.sub(cfg_pattern, new_cfg_str.strip(), lines, flags=re.DOTALL) # Replace the old CFG definition
+    lines = re.sub(size_pattern, new_size_str, lines)                        # Replace the old size definition
 
-    lines = re.sub(cfg_pattern, new_cfg_str, lines, flags=re.DOTALL) # Replace the CFG definition
+    # Write the modified content back to the file
+    with open("../src/cfi/cfg.c", 'w') as f:
+        f.write(lines)
 
+    with open("../src/cfi/intr_vector_table.c", 'r') as f:
+        lines = f.read()
+    
     # Pattern for the old code block (without forward controls)
     code_block_pattern = (
         r'if\s*\(\s*push\(&shadow_stack,\s*source\s*\+\s*2\)\s*!=\s*1\s*\)\s*{'
@@ -172,7 +187,7 @@ def inject_cfg(src_addresses, dst_addresses):
 
     # Replacement code block as a multiline string
     new_code_block = r"""
-    if (check(&cfg, source, ecode_address_encoding) == 1) {
+    if (check(source, ecode_address_encoding)) {
             if (push(&shadow_stack, source + 2) != 1) {
                 printf("\\t[ESR - U Mode Ecall]:\\tStack is full, terminating execution ...\\n");
                 code_termination();
@@ -192,12 +207,26 @@ def inject_cfg(src_addresses, dst_addresses):
     print("CFG injected correctly")
 
 def restore_vector_table():
+
+    new_cfg_str = "__attribute__((section(\".cfg\"))) unsigned int cfg[][2] = {{1,1}};" # Replacement string
+
+    with open("../src/cfi/cfg.c", 'r') as f:
+        lines = f.read()
+
+    cfg_pattern = r'__attribute__\(\(section\("\.cfg"\)\)\) unsigned int cfg\[\]\[2\] = {.*?};' # Pattern for the old CFG definition to be replaced
+
+    modified_lines = re.sub(cfg_pattern, new_cfg_str, lines, flags=re.DOTALL) # Replace the old CFG definition with the new one
+
+    # Write the modified content back to the file
+    with open("../src/cfi/cfg.c", 'w') as f:
+        f.write(modified_lines)
+
     with open("../src/cfi/intr_vector_table.c", 'r') as f:
         lines = f.read()
 
     # Pattern for the old code block (with forward controls)
     code_block_pattern = (
-        r'if\s*\(\s*check\(&cfg,\s*source,\s*ecode_address_encoding\)\s*==\s*1\s*\)\s*{'
+        r'if\s*\(\s*check\(\s*source,\s*ecode_address_encoding\)\s*\)\s*{'
         r'\s*if\s*\(\s*push\(&shadow_stack,\s*source\s*\+\s*2\)\s*!=\s*1\s*\)\s*{'
         r'\s*printf\("\s*\\t\[ESR - U Mode Ecall\]:\\tStack is full, terminating execution\s*\.\.\.\\n"\);\s*'
         r'code_termination\(\);\s*}'

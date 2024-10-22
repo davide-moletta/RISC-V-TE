@@ -48,7 +48,7 @@ def extract(output_string, blocks, file):
     src_addresses = []
     dst_addresses = []
     block_size = 56         # Size of a logging block in Bytes
-    forward_check_size = 84 # Size of the forward control block in Bytes
+    forward_check_size = 60 # Size of the forward control block in Bytes
 
     # Extract Source and Destination from the output and store it
     if output_string != "":
