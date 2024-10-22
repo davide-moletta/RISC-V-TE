@@ -38,8 +38,6 @@ void esr_handler_reserved(void)          __attribute__((section(".intr_service_r
  
 void code_termination(void)              __attribute__((section(".intr_service_routines")));
 
-__attribute__((section(".shadow_stack"))) SStack shadow_stack = {.top = -1};
-
 /*
 Interrupt | exception Code | Description
 1         | 0              | User software interrupt
@@ -264,7 +262,7 @@ void esr_handler_U_mode_ecall(unsigned int ecode_address_encoding, unsigned int 
         printf("\t[ESR - U Mode Ecall]:\tJump check requested for %x and mepc: %x\n", ecode_address_encoding, mepc);
         unsigned int source = mepc + 4;
         
-        if (push(&shadow_stack, source + 2) != 1) {
+        if (push(source + 2) != 1) {
             printf("\t[ESR - U Mode Ecall]:\tStack is full, terminating execution ...\n");
             code_termination();
         } 
@@ -276,7 +274,7 @@ void esr_handler_U_mode_ecall(unsigned int ecode_address_encoding, unsigned int 
         /*
             SHADOW STACK CHECK: destination address and popped address must be equal
         */
-        unsigned int stored_address = pop(&shadow_stack);
+        unsigned int stored_address = pop();
         printf("\t[ESR - U Mode Ecall]:\tReturn check requested for %x, mepc: %x and popped value: %x\n", ecode_address_encoding - 1, mepc, stored_address);
         
         if (stored_address == 0 || stored_address != ecode_address_encoding - 1)
@@ -311,7 +309,7 @@ void esr_handler_M_mode_ecall(unsigned int ecode_address_encoding, unsigned int 
         printf("\t[ESR - M Mode Ecall]:\tJump check requested for %x and mepc: %x\n", ecode_address_encoding, mepc);
         unsigned int source = mepc + 4;
         
-        if (push(&shadow_stack, source + 2) != 1) {
+        if (push(source + 2) != 1) {
             printf("\t[ESR - U Mode Ecall]:\tStack is full, terminating execution ...\n");
             code_termination();
         } 
@@ -323,7 +321,7 @@ void esr_handler_M_mode_ecall(unsigned int ecode_address_encoding, unsigned int 
         /*
             SHADOW STACK CHECK: destination address and popped address must be equal
         */
-        unsigned int stored_address = pop(&shadow_stack);
+        unsigned int stored_address = pop();
         printf("\t[ESR - M Mode Ecall]:\tReturn check requested for %x, mepc: %x and popped value: %x\n", ecode_address_encoding - 1, mepc, stored_address);
         
         if (stored_address == 0 || stored_address != ecode_address_encoding - 1)
