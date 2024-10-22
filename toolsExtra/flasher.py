@@ -1,6 +1,7 @@
 import sys
 import subprocess
 import os
+import time
 import shlex
 import instrumenter
 import CFGextractor
@@ -37,15 +38,15 @@ def run_command(command, capture_output=False, output_file=None):
         print(f"Error: Command '{command}' failed with error: {e}")
         sys.exit(1)
     except KeyboardInterrupt:
-        sys.exit(0)  
+        return  
   
 def extractor(command):
     command_list = shlex.split(command)
     output_lines = []
 
     try:
-        # Start the command with Popen
-        with subprocess.Popen(command_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE,text=True, bufsize=1, universal_newlines=True) as process:
+        # Start the subprocess with Popen
+        with subprocess.Popen(command_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1, universal_newlines=True) as process:
                 while True:                              # Poll the process for new output until it terminates
                     out = process.stdout.readline()
                     if "Source" in out:
@@ -59,6 +60,30 @@ def extractor(command):
     except subprocess.CalledProcessError as e:
         print(f"Error: Command '{command}' failed with error: {e}")
         sys.exit(1)
+
+def run_command_with_time(command):
+    command_list = shlex.split(command)
+    start_time = time.time()  # Start time recording
+
+    try:
+        # Start the subprocess with Popen
+        with subprocess.Popen(command_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1) as process:
+            while True:
+                output = process.stdout.readline()   # Read a line from the process' output
+                if output:                           # Only print if there is output
+                    print(output.strip())            # Print the output
+                
+                if "Execution terminated" in output: # Check for "Execution terminated" in the output
+                    break                            # Exit the loop if termination message is found
+
+            elapsed_time = time.time() - start_time  # Calculate elapsed time
+            process.terminate()                      # Terminate the process
+            process.wait()                           # Wait for the process to terminate
+    except subprocess.CalledProcessError as e:
+        print(f"Error: Command '{command}' failed with error: {e}")
+        sys.exit(1)
+
+    return elapsed_time
 
 # Function to clear files before creating new ones
 def clear():
@@ -74,7 +99,7 @@ def flash(extract = False):
     if extract:
         return extractor(f"{ESPUTIL} monitor")                # If extract is true capture output to compute CFG
     else:
-        run_command(f"{ESPUTIL} monitor")                     # Else monitor the application to see I/O
+        return run_command_with_time(f"{ESPUTIL} monitor")    # Else monitor the application to see I/O
 
 # Function to build the executable
 def build():
@@ -93,8 +118,8 @@ def build():
     print(f"Creating {OUTPUT}.s file...")
     run_command(f"{TOOLCHAIN}-objdump -D {OUTPUT}.elf", capture_output=True, output_file=Path(f"{DIRECTORY}/toolsExtra/{OUTPUT}.s")) # Creates .s file (for inspections)
 
-    bin_size = os.path.getsize(f"{DIRECTORY}/toolsExtra/{OUTPUT}.bin")
-    print(f"Files built successfully\nProduced a binary of size {bin_size} Bytes\n")
+    print(f"Files built successfully")
+    return os.path.getsize(f"{DIRECTORY}/toolsExtra/{OUTPUT}.bin")
 
 # Function to instrument and build the executable
 def secure_build():
@@ -147,9 +172,9 @@ def secure_build():
     run_command(f"rm {all_assembly_files} {DIRECTORY}/toolsExtra/ij_logger.s") # Removes assembly files
 
     instrumenter.restore_vector_table()
-
-    bin_size = os.path.getsize(f"{DIRECTORY}/toolsExtra/{OUTPUT}.bin")
-    print(f"Files instrumented and built successfully\nProduced a binary of size {bin_size} Bytes\n")
+ 
+    print(f"Files instrumented and built successfully")
+    return os.path.getsize(f"{DIRECTORY}/toolsExtra/{OUTPUT}.bin")
 
 def main():
     if len(sys.argv) < 2 or sys.argv[1] in {"help", "-help", "--help", "h", "-h", "--h"}:
@@ -166,15 +191,17 @@ def main():
     if command == "build":
         build()
     elif command == "run":
-        build()
+        bin_size = build()
         print("Flashing the program...\n")
-        flash()
+        time = flash()
+        print(f"Binary size: {bin_size} Byte. Execution time: {time}")
     elif command == "secure-build":
         secure_build()
     elif command == "secure-run":
-        secure_build()
+        bin_size = secure_build()
         print("Flashing the instrumented program...\n")
-        flash()
+        time = flash()
+        print(f"Binary size: {bin_size} Byte. Execution time: {time}")
     elif command == "clear":
         clear()
     else:
