@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include "user_code.h"
 
-void merge(int arr[], int left, int mid, int right) {
+void merge(int arr[], int left, int mid, int right)
+{
     int i, j, k;
-    int n1 = mid - left + 1;  
-    int n2 = right - mid;  
+    int n1 = mid - left + 1;
+    int n2 = right - mid;
 
     int L[n1], R[n2];
 
@@ -13,36 +14,43 @@ void merge(int arr[], int left, int mid, int right) {
     for (j = 0; j < n2; j++)
         R[j] = arr[mid + 1 + j];
 
-    i = 0; 
+    i = 0;
     j = 0;
-    k = left; 
-    while (i < n1 && j < n2) {
-        if (L[i] <= R[j]) {
+    k = left;
+    while (i < n1 && j < n2)
+    {
+        if (L[i] <= R[j])
+        {
             arr[k] = L[i];
             i++;
-        } else {
+        }
+        else
+        {
             arr[k] = R[j];
             j++;
         }
         k++;
     }
 
-    while (i < n1) {
+    while (i < n1)
+    {
         arr[k] = L[i];
         i++;
         k++;
     }
 
-    while (j < n2) {
+    while (j < n2)
+    {
         arr[k] = R[j];
         j++;
         k++;
     }
 }
 
-void mergeSort(int arr[], int left, int right) {
-    printf("Using %d and %d\n", left, right);
-    if (left < right) {
+void mergeSort(int arr[], int left, int right)
+{
+    if (left < right)
+    {
         int mid = left + (right - left) / 2;
 
         mergeSort(arr, left, mid);
@@ -52,7 +60,8 @@ void mergeSort(int arr[], int left, int right) {
     }
 }
 
-void start_u_code() {
+void start_u_code()
+{
     int arr[] = {1, 15, 10, 2};
     int arr_size = sizeof(arr) / sizeof(arr[0]);
 
@@ -63,10 +72,7 @@ void start_u_code() {
     }
     printf("\n");
 
-    void (*volatile funPtr)(int *, int, int);
-    funPtr = mergeSort;
-    asm("ecall");
-    funPtr(arr, 0, arr_size - 1);
+    mergeSort(arr, 0, arr_size - 1);
 
     printf("End array: ");
     for (int i = 0; i < arr_size; i++)
