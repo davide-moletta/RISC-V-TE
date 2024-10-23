@@ -134,7 +134,9 @@ def secure_build():
     
     run_command(f"{TOOLCHAIN}-gcc -S {CFLAGS} {SOURCES} {LOGGING_SOURCE} {extra_sources}") # Creates individual assembly files
    
+    start = time.time()
     ind_jumps = instrumenter.instrument(files_to_instrument, CFGLogging=True) # Instrument the files with logging capabilities and retrieve the existence of indirect jumps
+    instrumentation_time = time.time() - start
 
     all_assembly_files = " ".join([f"{DIRECTORY}/toolsExtra/{file}" for file in os.listdir(f"{DIRECTORY}/toolsExtra") if file.endswith(".s") and file != "ij_logger.s"]) # Retrieve all assembly files to be assembled and linked
     
@@ -148,6 +150,7 @@ def secure_build():
     run_command(f"{TOOLCHAIN}-objdump -D {OUTPUT}.elf", capture_output=True, output_file=Path(f"{DIRECTORY}/toolsExtra/{OUTPUT}.s")) # Creates .s file (for inspections)
 
     # If there are indirect jumps run program to detect jump addresses
+    start = time.time()
     if ind_jumps:
         output_string = flash(extract=True)
         blocks = CFGextractor.find_blocks(OUTPUT + ".s")
@@ -160,8 +163,11 @@ def secure_build():
     else:
         output_string = ""
         blocks = []
+    simulation_time = time.time() - start
 
+    start = time.time()
     CFGextractor.extract(output_string, blocks, OUTPUT + ".s") # Extract and inject CFG 
+    cfg_time = time.time() - start
 
     run_command(f"{TOOLCHAIN}-gcc -S {CFLAGS} {SOURCES} {extra_sources}")                                                            # Creates individual assembly files
     instrumenter.instrument(files_to_instrument)                                                                                     # Instrument the files
@@ -175,7 +181,7 @@ def secure_build():
     instrumenter.restore_vector_table()
  
     print(f"Files instrumented and built successfully")
-    return os.path.getsize(f"{DIRECTORY}/toolsExtra/{OUTPUT}.bin")
+    return os.path.getsize(f"{DIRECTORY}/toolsExtra/{OUTPUT}.bin"), instrumentation_time, simulation_time, cfg_time
 
 def main():
     if len(sys.argv) < 2 or sys.argv[1] in {"help", "-help", "--help", "h", "-h", "--h"}:
@@ -195,14 +201,14 @@ def main():
         bin_size = build()
         print("Flashing the program...\n")
         time = flash()
-        print(f"Binary size: {bin_size} Byte. Execution time: {time}")
+        print(f"Binary size: {bin_size} Byte\nExecution time: {time}s")
     elif command == "secure-build":
         secure_build()
     elif command == "secure-run":
-        bin_size = secure_build()
+        bin_size, instrumentation_time, simulation_time, cfg_time = secure_build()
         print("Flashing the instrumented program...\n")
-        time = flash()
-        print(f"Binary size: {bin_size} Byte. Execution time: {time}")
+        run_time = flash()
+        print(f"Binary size: {bin_size} Byte\nExecution time: {run_time}s\nInstrumentation time: {instrumentation_time}s\nSimulation time: {simulation_time}s\nCFG extraction time: {cfg_time}s")
     elif command == "clear":
         clear()
     else:

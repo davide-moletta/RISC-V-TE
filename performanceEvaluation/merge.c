@@ -49,6 +49,7 @@ void merge(int arr[], int left, int mid, int right)
 
 void mergeSort(int arr[], int left, int right)
 {
+    printf("Checking: %d - %d\n", left, right);
     if (left < right)
     {
         int mid = left + (right - left) / 2;
@@ -62,7 +63,7 @@ void mergeSort(int arr[], int left, int right)
 
 void start_u_code()
 {
-    int arr[] = {1, 15, 10, 2};
+    int arr[] = {1, 15, 10, 2, 112, 2, 14, 10, 2000, 222, 177, 24};
     int arr_size = sizeof(arr) / sizeof(arr[0]);
 
     printf("Start array: ");
