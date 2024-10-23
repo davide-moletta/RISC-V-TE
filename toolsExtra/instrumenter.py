@@ -181,19 +181,16 @@ def inject_cfg(src_addresses, dst_addresses):
     # Pattern for the old code block (without forward controls)
     code_block_pattern = (
         r'if\s*\(\s*push\(source\s*\+\s*2\)\s*!=\s*1\s*\)\s*{'
-        r'\s*printf\("\s*\\t\[ESR - U Mode Ecall\]:\\tStack is full, terminating execution\s*\.\.\.\\n"\);\s*'
-        r'code_termination\(\);\s*}'
+        r'\s*code_termination\(\);\s*}'
     )
 
     # Replacement code block as a multiline string
     new_code_block = r"""
     if (check(source, ecode_address_encoding)) {
             if (push(source + 2) != 1) {
-                printf("\\t[ESR - U Mode Ecall]:\\tStack is full, terminating execution ...\\n");
                 code_termination();
             }
         } else {
-            printf("\\t[ESR - U Mode Ecall]:\\tNo CFG match, terminating execution ...\\n");
             code_termination();
         }
     """
@@ -228,18 +225,15 @@ def restore_vector_table():
     code_block_pattern = (
         r'if\s*\(\s*check\(\s*source,\s*ecode_address_encoding\)\s*\)\s*{'
         r'\s*if\s*\(\s*push\(source\s*\+\s*2\)\s*!=\s*1\s*\)\s*{'
-        r'\s*printf\("\s*\\t\[ESR - U Mode Ecall\]:\\tStack is full, terminating execution\s*\.\.\.\\n"\);\s*'
-        r'code_termination\(\);\s*}'
+        r'\s*code_termination\(\);\s*}'
         r'\s*}'
         r'\s*else\s*{'
-        r'\s*printf\("\s*\\t\[ESR - U Mode Ecall\]:\\tNo CFG match, terminating execution\s*\.\.\.\\n"\);\s*'
-        r'code_termination\(\);\s*}'
+        r'\s*code_termination\(\);\s*}'
     )
 
     # Replacement code block as a multiline string
     new_code_block = r"""
     if (push(source + 2) != 1) {
-            printf("\\t[ESR - U Mode Ecall]:\\tStack is full, terminating execution ...\\n");
             code_termination();
         }
     """

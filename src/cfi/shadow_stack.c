@@ -11,7 +11,6 @@ short isFull()                   __attribute__((section(".intr_service_routines"
 short isEmpty()                  __attribute__((section(".intr_service_routines")));
 short push(unsigned int address) __attribute__((section(".intr_service_routines")));
 unsigned int pop()               __attribute__((section(".intr_service_routines")));
-void initStack()                 __attribute__((section(".intr_service_routines")));
 
 __attribute__((section(".shadow_stack"))) SStack shadow_stack = {.top = -1};
 

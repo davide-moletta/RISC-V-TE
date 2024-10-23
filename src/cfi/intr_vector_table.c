@@ -259,15 +259,14 @@ void esr_handler_U_mode_ecall(unsigned int ecode_address_encoding, unsigned int 
 
             IF ALLOWED PUSH mepc + 4 (ecall) + 2 (jump instruction) to shadow stack
         */
-        printf("\t[ESR - U Mode Ecall]:\tJump check requested for %x and mepc: %x\n", ecode_address_encoding, mepc);
+        //printf("\t[ESR - U Mode Ecall]:\tJump check requested for %x and mepc: %x\n", ecode_address_encoding, mepc);
         unsigned int source = mepc + 4;
         
         if (push(source + 2) != 1) {
-            printf("\t[ESR - U Mode Ecall]:\tStack is full, terminating execution ...\n");
             code_termination();
         } 
 
-        printf("\t[ESR - U Mode Ecall]:\tReturn address %x stored correctly ...\n", source + 2);
+        //printf("\t[ESR - U Mode Ecall]:\tReturn address %x stored correctly ...\n", source + 2);
     }
     else if ((ecode_address_encoding % 2) != 0) // If the address is odd, we remove 1 and check for return
     {
@@ -275,14 +274,14 @@ void esr_handler_U_mode_ecall(unsigned int ecode_address_encoding, unsigned int 
             SHADOW STACK CHECK: destination address and popped address must be equal
         */
         unsigned int stored_address = pop();
-        printf("\t[ESR - U Mode Ecall]:\tReturn check requested for %x, mepc: %x and popped value: %x\n", ecode_address_encoding - 1, mepc, stored_address);
+       // printf("\t[ESR - U Mode Ecall]:\tReturn check requested for %x, mepc: %x and popped value: %x\n", ecode_address_encoding - 1, mepc, stored_address);
         
         if (stored_address == 0 || stored_address != ecode_address_encoding - 1)
         {
-            printf("\t[ESR - U Mode Ecall]:\tWrong return address or empty stack, terminating execution ...\n");
+            //printf("\t[ESR - U Mode Ecall]:\tWrong return address or empty stack, terminating execution ...\n");
             code_termination();
         }
-        printf("\t[ESR - U Mode Ecall]:\tReturn address is correct, return allowed ...\n");
+        //printf("\t[ESR - U Mode Ecall]:\tReturn address is correct, return allowed ...\n");
     } else
     {
         printf("\t[ESR - U Mode Ecall]:\tUndefined Ecall code %d\n", ecode_address_encoding);
@@ -306,15 +305,14 @@ void esr_handler_M_mode_ecall(unsigned int ecode_address_encoding, unsigned int 
 
             IF ALLOWED PUSH mepc + 4 (ecall) + 2 (jump instruction) to shadow stack
         */
-        printf("\t[ESR - M Mode Ecall]:\tJump check requested for %x and mepc: %x\n", ecode_address_encoding, mepc);
+        //printf("\t[ESR - M Mode Ecall]:\tJump check requested for %x and mepc: %x\n", ecode_address_encoding, mepc);
         unsigned int source = mepc + 4;
         
         if (push(source + 2) != 1) {
-            printf("\t[ESR - U Mode Ecall]:\tStack is full, terminating execution ...\n");
             code_termination();
         } 
 
-        printf("\t[ESR - M Mode Ecall]:\tReturn address %x stored correctly ...\n", source + 2);
+        //printf("\t[ESR - M Mode Ecall]:\tReturn address %x stored correctly ...\n", source + 2);
     }
     else if ((ecode_address_encoding % 2) != 0) // If the address is odd, we remove 1 and check for return
     {
@@ -322,14 +320,14 @@ void esr_handler_M_mode_ecall(unsigned int ecode_address_encoding, unsigned int 
             SHADOW STACK CHECK: destination address and popped address must be equal
         */
         unsigned int stored_address = pop();
-        printf("\t[ESR - M Mode Ecall]:\tReturn check requested for %x, mepc: %x and popped value: %x\n", ecode_address_encoding - 1, mepc, stored_address);
+        //printf("\t[ESR - M Mode Ecall]:\tReturn check requested for %x, mepc: %x and popped value: %x\n", ecode_address_encoding - 1, mepc, stored_address);
         
         if (stored_address == 0 || stored_address != ecode_address_encoding - 1)
         {
-            printf("\t[ESR - M Mode Ecall]:\tWrong return address or empty stack, terminating execution ...\n");
+            //printf("\t[ESR - M Mode Ecall]:\tWrong return address or empty stack, terminating execution ...\n");
             code_termination();
         }
-        printf("\t[ESR - M Mode Ecall]:\tReturn address is correct, return allowed ...\n");
+        //printf("\t[ESR - M Mode Ecall]:\tReturn address is correct, return allowed ...\n");
     } else
     {
         printf("\t[ESR - M Mode Ecall]:\tUndefined Ecall code %d\n", ecode_address_encoding);
