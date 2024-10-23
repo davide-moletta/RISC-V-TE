@@ -15,9 +15,10 @@ DIRECTORY = os.path.dirname(curr_dir.stdout.strip())                   # Current
 SOURCES_DIRECTORY = f"{DIRECTORY}/src/cfi"                             # User file directory
 
 TOOLCHAIN = "riscv-none-elf" # Toolchain, can be changed. Must be included in the PATH or specified here
+ISA = "rv32imc_zicsr"        # ISA, extensions can be changed for other needs
 CFLAGS = (
     "-W -Wall -Wextra -Werror -Wundef -Wshadow -pedantic -Wdouble-promotion -ffixed-a7 "
-    "-fno-common -Wconversion -march=rv32imc_zicsr -mabi=ilp32 -O1 -ffunction-sections "
+    f"-fno-common -Wconversion -march={ISA} -mabi=ilp32 -O1 -ffunction-sections "
     f"-fdata-sections -fno-builtin-printf -I{SOURCES_DIRECTORY} -I{DIRECTORY}/esp32c3") # GCC flags for building
 LINKFLAGS = f"-T{DIRECTORY}/esp32c3/link.ld -nostdlib -nostartfiles -Wl,--gc-sections"  # Linker flags
 SOURCES = f"{DIRECTORY}/esp32c3/boot.c {SOURCES_DIRECTORY}/main.c {SOURCES_DIRECTORY}/intr_vector_table.c {SOURCES_DIRECTORY}/shadow_stack.c {SOURCES_DIRECTORY}/cfg.c" # Needed C files 

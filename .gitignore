@@ -3,14 +3,8 @@ src/cfi/*.bin
 src/cfi/*.elf
 dump.asm
 
-# Ignore user code
-src/cfi/usercode/*.*
-!src/cfi/usercode/user_entry.*
-
 # Ignore c and h files outside main directory
-*.c
 !src/cfi/ij_logger.c
-*.h
 
 # Ignore flasher.py output files
 toolsExtra/*.bin

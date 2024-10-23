@@ -6,7 +6,7 @@ void user_mode_entry_point()
 {
     printf("\n\n--- Start of user code ---\n\n");
 
-    user_code(); // Call first user function here
+    start_u_code(); // Call first user function here
 
     printf("\n\n--- End of user code ---\n\n");
 
