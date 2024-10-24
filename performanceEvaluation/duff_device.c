@@ -2,8 +2,10 @@
 #include "user_code.h"
 
 /*
+    DUFF'S DEVICE
+    
     NORMAL RUN:
-        - Binary size: 4176 Byte
+        - Binary size: 3904 Byte
         - Execution time: 0.09779596328735352s
 
     SECURE RUN:

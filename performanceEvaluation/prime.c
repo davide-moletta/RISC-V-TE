@@ -2,13 +2,15 @@
 #include "user_code.h"
 
 /*
+    IS PRIME
+    
     NORMAL RUN:
-        - Binary size: 10560 Byte
+        - Binary size: 3226 Byte
         - Execution time: 3.254150390625s
 
     SECURE RUN:
         - Binary size: 10768 Byte
-        - Execution time: 3.254135847091675s
+        - Execution time: 4.379135847091675s
         - Instrumentation time: 0.0021398067474365234s
         - Simulation time: 0s (no indirect jumps)
         - CFG extraction time: 0.0016832351684570312s

@@ -3,8 +3,10 @@
 #include "user_code.h"
 
 /*
+    LEVENSHTEIN DISTANCE
+    
     NORMAL RUN:
-        - Binary size: 4224 Byte
+        - Binary size: 3952 Byte
         - Execution time: 0.0858006477355957s
 
     SECURE RUN:

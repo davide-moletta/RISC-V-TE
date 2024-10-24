@@ -58,9 +58,6 @@ SECTIONS {
   PROVIDE(_end = .);
 }
 
-PROVIDE(printf =                 0x40000040); 
-
-/*
 PROVIDE(memset =                 0x40000354);
 PROVIDE(memcpy =                 0x40000358);
 PROVIDE(memmove =                0x4000035c);
@@ -134,4 +131,3 @@ PROVIDE(uart_rx_one_char =       0x40000070);
 PROVIDE(uart_rx_one_char_block = 0x40000074);
 PROVIDE(uart_rx_readbuff =       0x40000078);
 PROVIDE(__divdi3 =               0x400007b4);
-*/

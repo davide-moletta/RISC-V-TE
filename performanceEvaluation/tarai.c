@@ -2,13 +2,15 @@
 #include "user_code.h"
 
 /*
+    TARAI  
+    
     NORMAL RUN:
-        - Binary size: 3888 Byte
+        - Binary size: 3616 Byte
         - Execution time: 0.09367251396179199s
 
     SECURE RUN:
         - Binary size: 4128 Byte
-        - Execution time: 0.09395313262939453s
+        - Execution time: 0.10395313262939453s
         - Instrumentation time: 0.001976490020751953s
         - Simulation time: 0s (no indirect jumps)
         - CFG extraction time: 0.0015201568603515625s

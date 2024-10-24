@@ -196,14 +196,16 @@ def main():
     command = sys.argv[1]
 
     if command == "build":
-        build()
+        bin_size = build()
+        print(f"Binary size: {bin_size} Byte")
     elif command == "run":
         bin_size = build()
         print("Flashing the program...\n")
         time = flash()
         print(f"Binary size: {bin_size} Byte\nExecution time: {time}s")
     elif command == "secure-build":
-        secure_build()
+        bin_size = secure_build()
+        print(f"Binary size: {bin_size} Byte")
     elif command == "secure-run":
         bin_size, instrumentation_time, simulation_time, cfg_time = secure_build()
         print("Flashing the instrumented program...\n")

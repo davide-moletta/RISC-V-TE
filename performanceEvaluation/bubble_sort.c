@@ -2,13 +2,15 @@
 #include "user_code.h"
 
 /*
+    BUBBLE SORT
+    
     NORMAL RUN:
-        - Binary size: 5008 Byte
+        - Binary size: 4736 Byte
         - Execution time: 0.37113380432128906s
 
     SECURE RUN:
         - Binary size: 5200 Byte
-        - Execution time: 0.37116265296936035s
+        - Execution time: 0.37216265296936035s
         - Instrumentation time: 0.003024578094482422s
         - Simulation time: 0s (no indirect jumps)
         - CFG extraction time: 0.0017499923706054688s

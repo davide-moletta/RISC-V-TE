@@ -2,13 +2,15 @@
 #include "user_code.h"
 
 /*
+    BINARY SEARCH
+
     NORMAL RUN:
-        - Binary size: 5008 Byte
+        - Binary size: 4736 Byte
         - Execution time: 0.08387207984924316s
 
     SECURE RUN:
         - Binary size: 5152 Byte
-        - Execution time: 0.08377194404602051s
+        - Execution time: 0.08477194404602051s
         - Instrumentation time: 0.0029611587524414062s
         - Simulation time:  0s (no indirect jumps)
         - CFG extraction time: 0.0017352104187011719s

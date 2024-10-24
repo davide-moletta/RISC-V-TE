@@ -2,13 +2,15 @@
 #include "user_code.h"
 
 /*
+    MERGE SORT
+    
     NORMAL RUN:
-        - Binary size: 5344 Byte
+        - Binary size: 5072 Byte
         - Execution time: 1.21690034866333s
 
     SECURE RUN:
         - Binary size: 5600 Byte
-        - Execution time: 1.21708083152771s
+        - Execution time: 1.27708083152771s
         - Instrumentation time: 0.0035352706909179688s
         - Simulation time: 0s (no indirect jumps)
         - CFG extraction time: 0.0017805099487304688s
