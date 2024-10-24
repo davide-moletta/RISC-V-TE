@@ -2,10 +2,12 @@
 #include <stdio.h>
 
 int check(unsigned int source, unsigned int destination) __attribute__((section(".intr_service_routines")));
+void* bin_search(const void* key, const void* base, size_t num, size_t size, int (*cmp)(const void*, const void*)) __attribute__((section(".intr_service_routines")));
+int compare(const void* A, const void* B) __attribute__((section(".intr_service_routines")));
 
 // Definition of control flow graph and its size, do not modify as the instrumenter will take care of this
 __attribute__((section(".cfg"))) unsigned int cfg[][2] = {{1,1}};
-size_t cfg_size = 4;
+size_t cfg_size = 3;
 
 // Comparison function for binary search
 int compare(const void* A, const void* B) {
@@ -18,7 +20,7 @@ int compare(const void* A, const void* B) {
         if (pair1[i] > pair2[i]) return 1;
     }
 
-    // If both source and destiniation are equal return 0
+    // If both source and destination are equal return 0
     return 0;
 }
 
@@ -44,7 +46,7 @@ void* bin_search(const void* key, const void* base, size_t num, size_t size, int
     return NULL;                                // Element not found
 }
 
-// Check if the source and destiantion addresses match
+// Check if the source and destination addresses match
 int check(unsigned int source, unsigned int destination)
 {
     unsigned int target[2] = {source, destination};
