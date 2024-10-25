@@ -7,7 +7,7 @@ int compare(const void* A, const void* B) __attribute__((section(".intr_service_
 
 // Definition of control flow graph and its size, do not modify as the instrumenter will take care of this
 __attribute__((section(".cfg"))) unsigned int cfg[][2] = {{1,1}};
-size_t cfg_size = 2;
+size_t cfg_size = 1;
 
 // Comparison function for binary search
 int compare(const void* A, const void* B) {

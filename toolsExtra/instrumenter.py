@@ -149,17 +149,20 @@ def instrument_vector_table(registers):
 def inject_cfg(src_addresses, dst_addresses):
     print("Injecting CFG...")
 
-    cfg_size = len(src_addresses)                   # Compute size of the cfg
+    pairs = list(zip(src_addresses, dst_addresses)) # Create pairs of (source, destination)
+    unique_pairs = list(set(pairs))                 # Remove duplicates by converting the list to a set and back to a list
+    unique_pairs.sort(key=lambda x: (x[0], x[1]))   # Sort pairs based on source first, then destination (for binary search)
+
+    print(unique_pairs)
+
+    cfg_size = len(unique_pairs)                    # Compute size of the cfg
     new_size_str = f"size_t cfg_size = {cfg_size};" # Build the cfg_size string
 
     cfg_space = 4 * ((cfg_size - 1) * 2)            # Compute the amount of space occupied by the cfg (-1 is because by default the cfg is {1,1} so we do not count such value)
 
-    pairs = list(zip(src_addresses, dst_addresses)) # Create pairs of (source, destination)
-    pairs.sort(key=lambda x: (x[0], x[1]))          # Sort pairs based on source first, then destination (for binary search)
-
     # Create new cfg string based on sorted pairs and by adding the space occupied by the cfg
     new_cfg_str = "__attribute__((section(\".cfg\"))) unsigned int cfg[][2] = {"
-    new_cfg_str += ", ".join(f"{{{src + cfg_space}, {dst + cfg_space}}}" for src, dst in pairs)
+    new_cfg_str += ", ".join(f"{{{src + cfg_space}, {dst + cfg_space}}}" for src, dst in unique_pairs)
     new_cfg_str += "};\n"
 
     with open("../src/cfi/cfg.c", 'r') as f:

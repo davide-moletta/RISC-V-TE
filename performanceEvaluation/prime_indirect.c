@@ -2,22 +2,24 @@
 #include "user_code.h"
 
 /*
-    IS PRIME
+    IS PRIME INDIRECT
     
     NORMAL RUN:
-        - Binary size: 3226 Byte
-        - Execution time: 3.254150390625s
+        - Binary size: 3712 Byte
+        - Execution time: 3.2537381649017334s
 
     SECURE RUN:
         - Binary size: 10768 Byte
-        - Execution time: 3.255135847091675s
-        - Instrumentation time: 0.0021398067474365234s
-        - Simulation time: 0s (no indirect jumps)
-        - CFG extraction time: 0.0016832351684570312s
+        - Execution time: 3.254897117614746s
+        - Instrumentation time: 0.0020825862884521484s
+        - Simulation time: 11.405126333236694s
+        - CFG extraction time: 0.0045146942138671875s
 */
 
 int isPrime(int i, int num)
 {
+    int (*volatile funPtr)(int, int);
+    funPtr = isPrime;
     printf("Checking: %d - %d\n", i, num);
     if (num == i)
     {
@@ -28,7 +30,7 @@ int isPrime(int i, int num)
         return 1;
     }
 
-    return isPrime(i + 1, num);
+    return funPtr(i + 1, num);
 }
 
 void start_u_code()

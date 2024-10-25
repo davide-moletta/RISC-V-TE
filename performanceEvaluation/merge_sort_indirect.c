@@ -2,18 +2,18 @@
 #include "user_code.h"
 
 /*
-    MERGE SORT
+    MERGE SORT INDIRECT
     
     NORMAL RUN:
-        - Binary size: 5072 Byte
-        - Execution time: 1.21690034866333s
+        - Binary size: 5088 Byte
+        - Execution time: 1.2168328762054443s
 
     SECURE RUN:
         - Binary size: 5600 Byte
-        - Execution time: 1.21708083152771s
-        - Instrumentation time: 0.0035352706909179688s
-        - Simulation time: 0s (no indirect jumps)
-        - CFG extraction time: 0.0017805099487304688s
+        - Execution time: 1.2169995307922363s
+        - Instrumentation time: 0.0036001205444335938s
+        - Simulation time: 4.639401197433472s
+        - CFG extraction time: 0.002725362777709961s
 */
 
 void merge(int arr[], int left, int mid, int right)
@@ -64,13 +64,15 @@ void merge(int arr[], int left, int mid, int right)
 
 void mergeSort(int arr[], int left, int right)
 {
+    void (*volatile funPtr)(int *, int, int);
+    funPtr = mergeSort;
     printf("Checking: %d - %d\n", left, right);
     if (left < right)
     {
         int mid = left + (right - left) / 2;
 
-        mergeSort(arr, left, mid);
-        mergeSort(arr, mid + 1, right);
+        funPtr(arr, left, mid);
+        funPtr(arr, mid + 1, right);
 
         merge(arr, left, mid, right);
     }

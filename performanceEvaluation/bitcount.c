@@ -10,7 +10,7 @@
 
     SECURE RUN:
         - Binary size: 4016 Byte
-        - Execution time: 0.11546017646789551s
+        - Execution time: 0.09566017646789551s
         - Instrumentation time: 0.0019583702087402344s
         - Simulation time: 0s (no indirect jumps)
         - CFG extraction time: 0.0015304088592529297s
