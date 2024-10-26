@@ -12,6 +12,7 @@ toolsExtra/*.elf
 toolsExtra/logs.log
 toolsExtra/*.s
 toolsExtra/__pycache__
+tools/plotter.py
 
 # Ignore miscellaneous files
 TODO
