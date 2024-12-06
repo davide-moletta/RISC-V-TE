@@ -153,8 +153,6 @@ def inject_cfg(src_addresses, dst_addresses):
     unique_pairs = list(set(pairs))                 # Remove duplicates by converting the list to a set and back to a list
     unique_pairs.sort(key=lambda x: (x[0], x[1]))   # Sort pairs based on source first, then destination (for binary search)
 
-    print(unique_pairs)
-
     cfg_size = len(unique_pairs)                    # Compute size of the cfg
     new_size_str = f"size_t cfg_size = {cfg_size};" # Build the cfg_size string
 
